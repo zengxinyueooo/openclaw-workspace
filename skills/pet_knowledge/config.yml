@@ -1,0 +1,14 @@
+# 宠物科普Skill配置文件
+
+# 定义依赖的生图Skill脚本路径
+# 未来如果更换生图技能，只需修改这里的路径
+image_generator:
+  script_path: "/Users/zengxinyue/.openclaw/workspace/skills/image-generator/run.sh"
+
+# 定义搜索引擎，为未来扩展API做准备
+search_engine:
+  provider: "web_search" # 暂定使用OpenClaw内置的web_search工具
+
+# 定义大模型，用于挖掘科普话题
+llm:
+  provider: "internal" # 假设使用OpenClaw内部集成的LLM能力

@@ -1,0 +1,1 @@
+{pet_breed}科普封面图，严格按以下排版：顶部大号加粗文字‘每周认识一种{pet_category}’，底部大号加粗文字‘{pet_breed_fullname}’，中间放仅抠出宠物本身的真实风格图片（无背景），围绕宠物用黑色箭头标注3-5个核心身体特征（每条标注文字10-20字，简短直白）。示例图： https://p0.meituan.net/dzusergrowthcontent/b9e3db5a05fff123b5c8edb0c10e207c1359198.png
