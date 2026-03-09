@@ -1,15 +1,25 @@
 #!/bin/bash
 # OPX Auth - 通过 AppleScript 从已打开的 Chrome 标签页获取 Cookie 和 AccessToken
-# 无需扩展、无需 CDP、无需手动操作，全自动执行
+# 自动处理 OpenClaw 浏览器实例冲突，全自动执行
 
 set -e
 
 OUTPUT_FILE="/tmp/opx-token.json"
-OPX_DOMAIN="opx-ai.sankuai.com"
 AUTH_URL="https://opx-ai.sankuai.com/sso/web/auth?clientId=055da5ec53&accessEnv=product&ssoprotect=1"
+OPENCLAW_BROWSER_STOPPED=false
 
 echo "🍑 OPX Auth - AppleScript 自动获取 Token"
 echo "=========================================="
+
+# 清理函数：确保 OpenClaw 浏览器恢复
+cleanup() {
+  if [ "$OPENCLAW_BROWSER_STOPPED" = true ]; then
+    echo "🔄 恢复 OpenClaw 浏览器..."
+    openclaw browser start --browser-profile openclaw > /dev/null 2>&1 &
+    echo "✅ OpenClaw 浏览器已恢复"
+  fi
+}
+trap cleanup EXIT
 
 # Step 1: 检查 Chrome 是否运行
 if ! pgrep -x "Google Chrome" > /dev/null 2>&1; then
@@ -17,7 +27,15 @@ if ! pgrep -x "Google Chrome" > /dev/null 2>&1; then
   exit 1
 fi
 
-# Step 2: 查找 OPX 标签页并获取 Cookie
+# Step 2: 停掉 OpenClaw 的 Chrome 实例（避免 AppleScript 连到错误的实例）
+if ps aux | grep "[C]hrome" | grep -q "\.openclaw/browser"; then
+  echo "⏸️  暂停 OpenClaw 浏览器（避免冲突）..."
+  openclaw browser stop --browser-profile openclaw > /dev/null 2>&1 || true
+  OPENCLAW_BROWSER_STOPPED=true
+  sleep 2
+fi
+
+# Step 3: 查找 OPX 标签页并获取 Cookie
 echo "🔍 查找 OPX 标签页..."
 
 COOKIE=$(osascript << 'EOF'
@@ -43,7 +61,6 @@ end tell
 EOF
 )
 
-# 检查是否找到标签页
 if [ "$COOKIE" = "ERROR:NO_TAB" ]; then
   echo "❌ 未找到 OPX 页面标签，请先在 Chrome 中打开 https://opx-ai.sankuai.com"
   exit 1
@@ -56,7 +73,7 @@ fi
 
 echo "✅ 获取 Cookie 成功"
 
-# Step 3: 调用 /sso/web/auth 获取 accessToken
+# Step 4: 调用 /sso/web/auth 获取 accessToken
 echo "🔑 获取 AccessToken..."
 
 AUTH_RESULT=$(osascript << EOF
@@ -90,7 +107,7 @@ end tell
 EOF
 )
 
-# Step 4: 解析结果并保存
+# Step 5: 解析结果并保存
 ACCESS_TOKEN=$(echo "$AUTH_RESULT" | python3 -c "
 import sys, json
 try:
@@ -113,17 +130,16 @@ fi
 
 echo "✅ 获取 AccessToken 成功"
 
-# Step 5: 保存到文件
+# Step 6: 保存到文件
 python3 -c "
-import json
-result = {
-    'cookie': '''${COOKIE}''',
-    'accessToken': '${ACCESS_TOKEN}'
-}
-with open('${OUTPUT_FILE}', 'w') as f:
+import json, sys
+cookie = sys.argv[1]
+token = sys.argv[2]
+result = {'cookie': cookie, 'accessToken': token}
+with open('$OUTPUT_FILE', 'w') as f:
     json.dump(result, f, indent=2, ensure_ascii=False)
 print(json.dumps(result, indent=2, ensure_ascii=False))
-"
+" "$COOKIE" "$ACCESS_TOKEN"
 
 echo ""
 echo "=========================================="
