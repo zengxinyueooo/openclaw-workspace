@@ -80,8 +80,8 @@ async function main() {
           console.log(result.accessToken);
           console.log('═══════════════════════════════════════════════════\n');
 
-          require('fs').writeFileSync('/tmp/opx-token.txt', JSON.stringify(result, null, 2));
-          console.log('💾 已保存到 /tmp/opx-token.txt');
+          require('fs').writeFileSync('/tmp/opx-token.json', JSON.stringify(result, null, 2));
+          console.log('💾 已保存到 /tmp/opx-token.json');
           ws.close();
           process.exit(0);
         }
