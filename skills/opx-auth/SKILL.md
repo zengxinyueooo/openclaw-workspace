@@ -1,12 +1,12 @@
 ---
 name: opx-auth
-description: 获取 OPX AI 的 AccessToken 和 Cookie。通过 OpenClaw Browser Relay 连接本地 Chrome 浏览器，访问页面并调用 /sso/web/auth 接口获取 Cookie 和 accessToken。
+description: 获取 OPX AI 的 AccessToken 和 Cookie。通过 AppleScript 直接从已打开的 Chrome 标签页中自动获取，无需扩展、无需 CDP、全自动执行。
 metadata:
   {
     "openclaw":
       {
         "emoji": "🔑",
-        "requires": { "tools": ["browser"] },
+        "requires": { "tools": ["exec"] },
       },
   }
 ---
@@ -17,86 +17,90 @@ metadata:
 
 ## 原理
 
-1. 通过 OpenClaw Browser Relay (`profile: "chrome"`) 连接你本地已登录的 Chrome 浏览器
-2. 打开 `https://opx-ai.sankuai.com/opx-ai-manage/#/content-marketing/auto-publish`
-3. 执行 JavaScript 调用 `/sso/web/auth` 接口
-4. 提取 **document.cookie** 和响应中的 **accessToken**
+通过 macOS **AppleScript (osascript)** 直接操作已打开的 Chrome 标签页：
+
+1. 查找 Chrome 中含 `opx-ai.sankuai.com` 的标签页
+2. 在该标签页执行 JavaScript 获取 `document.cookie`
+3. 在该标签页执行 `fetch('/sso/web/auth')` 获取 `accessToken`
+4. 结果保存到 `/tmp/opx-token.json`
+
+**无需 Browser Relay 扩展，无需 CDP 远程调试端口，全自动执行。**
 
 ## 前置条件
 
-- Chrome 浏览器已安装 OpenClaw Browser Relay 扩展
-- 扩展已连接（toolbar 图标显示 ON）
-- 已在浏览器中登录 OPX AI
+- **macOS** 系统
+- Chrome 浏览器**已运行**，且已打开 OPX 页面（已登录状态）
+- 首次使用时，macOS 会弹窗请求"允许终端/OpenClaw 控制 Chrome"的权限（一次性授权）
 
 ## 使用方法
 
-### 方式一：OpenClaw 自动执行（推荐）
+### 方式一：Agent 自动调用（推荐）
 
-直接告诉 OpenClaw：
+告诉 Agent：
 
 > "获取 OPX access token"
 
-OpenClaw 会自动执行：
-
-```javascript
-// 1. 打开 OPX 页面
-await browser.open('https://opx-ai.sankuai.com/opx-ai-manage/#/content-marketing/auto-publish', { profile: 'chrome' });
-
-// 2. 执行 JS 获取 Cookie 和 Token
-await browser.act({
-  kind: 'evaluate',
-  fn: `() => {
-    return new Promise(async (resolve) => {
-      try {
-        const res = await fetch('https://opx-ai.sankuai.com/sso/web/auth?clientId=055da5ec53&accessEnv=product&ssoprotect=1', {
-          credentials: 'include'
-        });
-        const data = await res.json();
-        resolve({
-          cookie: document.cookie,
-          accessToken: data.data?.accessToken,
-          response: data
-        });
-      } catch (e) {
-        resolve({ error: e.message, cookie: document.cookie });
-      }
-    });
-  }`
-});
-```
-
-### 方式二：手动执行脚本
-
-如需在命令行运行：
+Agent 执行流程：
 
 ```bash
-cd ~/.openclaw/workspace/skills/opx-auth
-node get-token.js
+# 运行脚本
+bash ~/.openclaw/workspace/skills/opx-auth/get-token.sh
+
+# 读取结果
+cat /tmp/opx-token.json
 ```
 
-**注意：** 此脚本需要 Chrome 已启用调试模式（`--remote-debugging-port=9222`）
+### 方式二：命令行手动执行
+
+```bash
+bash ~/.openclaw/workspace/skills/opx-auth/get-token.sh
+```
+
+## Agent 调用指南
+
+当其他 skill 需要 OPX 认证时，按以下步骤操作：
+
+```bash
+# 1. 执行脚本获取 token
+bash ~/.openclaw/workspace/skills/opx-auth/get-token.sh
+
+# 2. 读取保存的 token
+cat /tmp/opx-token.json
+```
+
+从 JSON 中提取所需字段：
+- `cookie` — 用于需要 Cookie 认证的请求
+- `accessToken` — 用于 Bearer Token 认证的请求
+
+### 错误处理
+
+| 错误信息 | 原因 | 解决方法 |
+|---------|------|---------|
+| Chrome 未运行 | Chrome 没有启动 | 打开 Chrome |
+| 未找到 OPX 页面标签 | Chrome 中没有 OPX 页面 | 打开 https://opx-ai.sankuai.com |
+| Cookie 为空 | 未登录 OPX | 在 Chrome 中登录 OPX |
+| 获取 AccessToken 失败 | SSO 过期 | 在 Chrome 中重新登录 OPX |
 
 ## 预期输出
 
 ```json
 {
   "cookie": "AWPTALOS23222=; _lxsdk_cuid=...; cube_session=...",
-  "accessToken": "eAGFzrtKA0EYhmGmW7QRr...",
-  "response": {
-    "code": 200,
-    "data": {
-      "accessToken": "..."
-    },
-    "msg": "success"
-  }
+  "accessToken": "eAGFzrtKA0EYhmGmW7QRr..."
 }
 ```
 
 ## 文件说明
 
-- `get-token.js` - Node.js 脚本，通过 CDP 连接 Chrome 获取 Token（备用方案）
+| 文件 | 说明 |
+|------|------|
+| `SKILL.md` | 本说明文件 |
+| `get-token.sh` | AppleScript 自动获取脚本（主方案） |
+| `get-token.js` | Node.js CDP 脚本（备用方案，需 --remote-debugging-port=9222） |
 
 ## 注意事项
 
-- `/sso/web/auth` 接口需要带 `clientId` 参数，如：`clientId=055da5ec53&accessEnv=product&ssoprotect=1`
-- 请求需要 `credentials: 'include'` 来携带当前页面的 Cookie
+- `/sso/web/auth` 接口需要 `clientId=055da5ec53&accessEnv=product&ssoprotect=1`
+- 请求需要 `credentials: 'include'` 来携带 Cookie
+- Token 有时效性，过期后需重新获取
+- 仅支持 macOS（依赖 AppleScript）
