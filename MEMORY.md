@@ -33,3 +33,9 @@
     - **描述**: 沙箱重建/系统重置时，workspace文件可能被还原为默认值。重要的定制文件（如AGENTS.md）必须及时git commit + push。
     - **应用**: 每次修改workspace文件后主动提醒宝宝备份，或在记忆沉淀时统一提交git。
 
+7.  **沙盒环境 vs 宝宝本机的区别 (Learned on 2026-03-13)**
+    - **描述**: OpenClaw 沙盒环境的路径是 `/mnt/openclaw/.openclaw/`，宝宝本机的路径是 `~/.openclaw/`（如 `/Users/zengxinyue/.openclaw/`）。在沙盒里安装的 skill 不会同步到宝宝本机，反之亦然。
+    - **应用**: 当宝宝要安装 skill 或做系统级操作时，要主动确认是在沙盒操作还是需要宝宝在本机执行命令；如果需要本机生效，要给出完整的本机执行命令。
+
+
+
