@@ -4,6 +4,30 @@
 
 ---
 
+### 工具与平台使用规范
+
+9. **KM 学城文档编辑格式规范 (Learned on 2026-03-14)**
+    - **核心原则**: KM 使用 ProseMirror 富文本编辑器，`Input.insertText` 只能插入纯文本，`commands.heading()` 调用后再 insertText 格式会被重置。**必须用 ProseMirror transaction + schema 直接构建节点插入**，才能生效。
+    - **正确方式**:
+      ```js
+      var mgr = window.editorInst.manager;
+      var view = mgr.editorView;
+      var state = view.state;
+      var schema = state.schema;
+      var tr = state.tr;
+      // 构建节点
+      var node = schema.nodes.heading.create({level: 2}, schema.text('标题文字'));
+      tr.insert(insertPos, node);
+      view.dispatch(tr);
+      ```
+    - **可用节点类型**: `heading`(level:1-4)、`paragraph`、`bullet_list`+`list_item`、`ordered_list`+`list_item`、`horizontal_rule`、`blockquote`、`code_block`
+    - **可用 mark 类型**: `strong`(加粗)、`em`(斜体)、`underline`、`strikethrough`、`code`
+    - **列表写法**: `bullet_list` 包裹多个 `list_item`，每个 `list_item` 包裹 `paragraph`
+    - **删除指定范围**: 用 `tr.delete(from, to)` 按 pos 删除
+    - **查找节点位置**: 用 `doc.forEach(fn)` 遍历，`offset` 是节点起始位置，`offset + node.nodeSize` 是结束位置
+
+---
+
 ### 行为规范
 
 8. **任务执行中必须定期主动汇报进度 + 完成后立即返回结果 (Learned on 2026-03-14)**

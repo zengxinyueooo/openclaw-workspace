@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "conan_device_management": {
+      "baseUrl": "http://mcphub-server.sankuai.com/mcphub-b/4a6adb127ba748",
+      "headers": {
+        "Authorization": "Bearer AT_X09dCWSy7qZXZPyvvKoCm3JmPOMC7mSd_QXdRQUFBQWJCa3ROVXd3aURJamtRbzVraUNmd0lpSGRteWlDcHUvY0F3Z0JBQUFBWGZ4V0J2eTZOQmEyTGxRVDhwMlNuSzVUeGNaMy9uV0Q5RE9vYjNWelpmaldkYUZnTE81KzR2OVUxT0VDSHVLdHFEQmhoTzRPRVNrc2F1czVNZXJVTEQ0R2M4ejBkQ2YzNUVRMHBPdE54cHdTbms3U1V6cmltYVBuaWdGWGF3PT0**mtsso**oVUuXvVvMjQfiLdKQ7FjGNRL0bgtN200Z8KcjgtsP9Fn0dfr6_7rp2KZCD1flZywdyMxSMODjd5Wp4lZwG3vLw**MjUzNTQyNjMsemVuZ3hpbnl1ZTA0LOabvuaso-aCpix6ZW5neGlueXVlMDRAbWVpdHVhbi5jb20sMSxlZGNfMjUzNTQyNjMsMTc3MzUwMzQ4Nzg2MSw1YTdkZDUyM2YwLDNiYzQyMjYwM2Q4YTRjOGNhNThkKjQ5M2RhMDdmYzQzLDE3NzM0OTI2ODc4NjE"
+      }
+    }
+  },
+  "imports": []
+}
