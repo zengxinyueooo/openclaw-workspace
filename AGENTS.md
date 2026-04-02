@@ -59,6 +59,20 @@ Participate, don't dominate. Group chat behavior: see `docs/group-chat-guide.md`
 3. 结果从 announce queue 回来，或手动查日志
 4. 转述给皮皮
 
+### 手动内容需求（皮皮触发）
+
+收到「为 XX 账号生成 XX 类型笔记」或类似指令时：
+
+1. spawn 鹰眼创建需求：
+   ```
+   sessions_spawn(agentId="mcn-eagle", task="生成一篇 <类型> 的 <人设名> 笔记", mode="run", runTimeoutSeconds=300)
+   ```
+2. `sessions_yield` 等鹰眼汇报「已创建 requirement + sub_requirement，ID: xxx」
+3. 告知皮皮「需求已创建，松鼠和蜜蜂的 cron 会自动接上」
+4. **不需要手动 spawn 松鼠或蜜蜂**——它们的 cron 会自动扫 pending 子需求并执行
+
+> ⚠️ 爪爪只负责把需求转达给鹰眼，后续流水线由 cron 自动驱动，不要手动插手。
+
 ### 数据回收调度（方案 B）
 收到「进行所有账号的数据回收」时：
 1. 跑 `python3 /Users/lipengyu/.openclaw/workspace-mcn-owl/scripts/list_accounts.py` 获取账号总数
