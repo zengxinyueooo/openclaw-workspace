@@ -1,73 +1,72 @@
-# MEMORY.md - 我的长期智慧沉淀
+# MEMORY.md - 主 Agent 长期记忆
 
-这是我从与宝宝的互动中学习到的最核心的原则和智慧，我会永远记住它们。
+> 只记录主 agent 在调度层必须长期记住的事实。流水账在 `memory/YYYY-MM-DD.md`，错误复盘在 `.learnings/`。
 
----
+## ⚠️ 每次会话必读
+1. **`.learnings/`** — 结构化错误与复盘
+2. **`AGENTS.md`** — 当前可执行规则与调度流程
+3. 本文件 — 长期稳定的调度共识
 
-### 工具与平台使用规范
+## 主 Agent 职责
 
-9. **KM 学城文档编辑格式规范 (Learned on 2026-03-14)**
-    - **核心原则**: KM 使用 ProseMirror 富文本编辑器，`Input.insertText` 只能插入纯文本，`commands.heading()` 调用后再 insertText 格式会被重置。**必须用 ProseMirror transaction + schema 直接构建节点插入**，才能生效。
-    - **正确方式**:
-      ```js
-      var mgr = window.editorInst.manager;
-      var view = mgr.editorView;
-      var state = view.state;
-      var schema = state.schema;
-      var tr = state.tr;
-      // 构建节点
-      var node = schema.nodes.heading.create({level: 2}, schema.text('标题文字'));
-      tr.insert(insertPos, node);
-      view.dispatch(tr);
-      ```
-    - **可用节点类型**: `heading`(level:1-4)、`paragraph`、`bullet_list`+`list_item`、`ordered_list`+`list_item`、`horizontal_rule`、`blockquote`、`code_block`
-    - **可用 mark 类型**: `strong`(加粗)、`em`(斜体)、`underline`、`strikethrough`、`code`
-    - **列表写法**: `bullet_list` 包裹多个 `list_item`，每个 `list_item` 包裹 `paragraph`
-    - **删除指定范围**: 用 `tr.delete(from, to)` 按 pos 删除
-    - **查找节点位置**: 用 `doc.forEach(fn)` 遍历，`offset` 是节点起始位置，`offset + node.nodeSize` 是结束位置
+- 爪爪只负责调度、派活、汇总、通知，不直接执行业务脚本
+- 所有业务执行必须通过对应 agent 的 skill 完成
+- skill 归属对应 agent 的 workspace，不能跨 workspace 直接调用脚本
 
----
+## 重要决策
 
-### 行为规范
+| 决策 | 结果 |
+|------|------|
+| pending/approved 两级审核 | ✅ 运行中 |
+| MCN 多 Agent 架构 v3 (ADR-003) | ✅ 已批准 |
+| 新增猫头鹰🦉数据分析 agent | ✅ 2026-03-17 |
+| 蚂蚁职责拆分：数据→猫头鹰，发布+评论→蚂蚁 | ✅ 2026-03-17 |
 
-8. **任务执行中必须定期主动汇报进度 + 完成后立即返回结果 (Learned on 2026-03-14)**
-    - **描述**: 执行异步任务（GUI Agent、exec后台任务等）时：① 每隔2-3轮轮询主动发一条进度消息给宝宝（如"🔥 第X次轮询，还在跑中..."）；② 任务一旦到达终态立刻解析并汇报结果，不能沉默等宝宝来问。
-    - **应用**: 提交任务后不要用 background=true 丢到后台不管，要持续 poll 并定期汇报，确保宝宝随时知道进展。
+## 调度铁律
 
----
+- cron payload 只写一句话触发，详细执行规则写在对应 agent 的 `AGENTS.md`
+- cron isolated session 在 yield 后会关闭；子 agent 完成后必须主动 `sessions_send(label="main")` 回主 session
+- 多账号、多对象任务优先并行 spawn，不要串行处理
+- 改配置、改接口行为、改关键参数前先查官方文档
+- Heartbeat retry（`retry_count < max_retries`）自动执行，不需要额外询问
+- 长文本（>500 字）优先用 `exec + heredoc` 分段写入，不用 `write`
+- 业务执行必须先读对应 skill，不允许 agent 绕开 skill 自行拼接口、抓 token、猜参数
+- cron job 使用 `sessionTarget: isolated` 时不要携带固定 `sessionKey`，否则容易出现“不适用 / 从未执行”
+- gateway 或 agent session 不健康时可以临时手动跑底层脚本救火，但必须记为调度异常，不能当作链路正常
+- 收到写日记、日向汇报这类 system event 时，必须按 `AGENTS.md` 完整流程执行，不能把手头工作笔记当成交付
 
-### 核心原则与能力
+## 系统级约束
 
-1.  **迭代式工作流是最佳实践 (Learned on 2026-03-04)**
-    - **描述**: 对于复杂任务（如内容生成），不要一次性完成，而应采用“提议 -> 用户确认/调整 -> 执行”的迭代模式。这能确保最终结果高度符合宝宝的预期。
-    - **应用**: 在设计新技能或执行多步任务时，主动在关键节点加入与宝宝的交互确认环节。
+- 子 agent 默认只注入 `AGENTS.md + TOOLS.md`，不注入 `SOUL.md`
+- 结果回填、入库匹配优先使用派发时给定的稳定标识，不依赖界面昵称或模型自行推断
+- 严禁擅自修改 API 参数名；后端报错时应上报，不要自行猜测参数
+- 所有时间戳先确认时区语义再写入或展示；需求追踪页/审核页/数据库曾因 UTC 与 CST 混用出现错位
+- 会话数量失控时优先运行 `workspace/scripts/cleanup-bee-sessions.py` 做清理，避免蜜蜂/蚂蚁 session 持续膨胀
 
-2.  **Prompt Engineering 的艺术 (Learned on 2026-03-04)**
-    - **描述**: 生成高质量内容的关键在于不断根据反馈来精炼Prompt。要善于将宝宝模糊的、主观的反馈（如“不好看”、“太空了”）转化为具体、可执行的Prompt指令（如“增加文字密度至150字”、“缩小图片主体占比至1/3”、“参考xx风格的密集排版”）。
-    - **应用**: 在调用生成类工具（特别是生图、生文）时，如果宝宝不满意，应主动引导宝宝给出更具体的修改方向，并将其应用到下一次的Prompt中。
+## Agent 归属
 
-3.  **工具能力与安全边界 (Learned on 2026-03-04)**
-    - **写入能力**: 我拥有在`/Users/zengxinyue/.openclaw/workspace/`目录内的文件写入权限(`write`工具)。
-    - **安全限制**: 绝对不能尝试写入`workspace`之外的任何路径，这是为了保护系统的安全与稳定。
-    - **执行闭环**: 对于需要等待的后台任务(`exec`)，必须主动使用`process(action='poll')`来检查结果，不能被动等待，要第一时间将成果汇报给宝宝。
+| Agent | 主要职责 | Workspace | Skills |
+|-------|-----------|-----------|--------|
+| 🦅 鹰眼 | 话题研究、评论搜索、巡检判定 | workspace-mcn-eagle | xhs-topic-researcher, xhs-comment-searcher |
+| 🐿️ 松鼠 | 素材采集、分类、入库 | workspace-mcn-squirrel | xhs-face-collector, xhs-nail-collector, xhs-scraper, collect-xhs-assets, collect-xhs-nail |
+| 🐝 蜜蜂 | 生图、上传、笔记生产 | workspace-mcn-bee | face-image-generator, image-upload, generating-xiaohongshu-notes |
+| 🐜 蚂蚁 | 发布运营、评论管理 | workspace-mcn-ant | opx-auth, opx-redbook-create, opx-task-management |
+| 🦉 猫头鹰 | GUI 数据回收、数据分析 | workspace-mcn-owl | gui-agent-cloud |
+| 🦊 爪爪 | 调度、派活、汇总 | workspace（主） | 无业务 skill，只调度（`coding-dispatch` 除外） |
 
-4.  **宝宝喜欢亲自把控Prompt (Learned on 2026-03-05)**
-    - **描述**: 宝宝对生成类任务的prompt非常敏感，喜欢亲自审核、修改和迭代prompt内容，而不是完全交给我。我应该每次改完prompt后主动发给宝宝确认，并在宝宝提供具体指令时严格按照原文修改。
-    - **应用**: 修改prompt后必须发给宝宝看，不要自作主张；宝宝给的指令尽量原文融入而非大幅改写。
+## 关键链接
 
-5.  **多Agent架构设计要点 (Learned on 2026-03-10)**
-    - **独立workspace**：每个Agent必须有独立workspace，避免人设混乱
-    - **AGENTS.md入职说明**：不写清楚职责，主管Agent会自己干活不派活
-    - **模型分层**：架构决策用最强模型，日常执行用普通模型
-    - **架构是聊出来的**：不急着一步到位，多轮对话迭代推敲
+- 生图审核: https://review-gold-seven.vercel.app/image-select.html
+- 素材审核: https://review-gold-seven.vercel.app/
+- 草稿审核: https://review-gold-seven.vercel.app/draft-review.html
+- 看板: https://review-gold-seven.vercel.app/dashboard.html
+- 指令日志: https://review-gold-seven.vercel.app/command-log.html
+- 学城日记父目录: doc_id=2749362623
+- km CLI: source ~/.meituan-local-tools/.venv/bin/activate && km get/create/search
 
-6.  **workspace文件需要及时备份 (Learned on 2026-03-10)**
-    - **描述**: 沙箱重建/系统重置时，workspace文件可能被还原为默认值。重要的定制文件（如AGENTS.md）必须及时git commit + push。
-    - **应用**: 每次修改workspace文件后主动提醒宝宝备份，或在记忆沉淀时统一提交git。
+## 历史故障浓缩
 
-7.  **沙盒环境 vs 宝宝本机的区别 (Learned on 2026-03-13)**
-    - **描述**: OpenClaw 沙盒环境的路径是 `/mnt/openclaw/.openclaw/`，宝宝本机的路径是 `~/.openclaw/`（如 `/Users/zengxinyue/.openclaw/`）。在沙盒里安装的 skill 不会同步到宝宝本机，反之亦然。
-    - **应用**: 当宝宝要安装 skill 或做系统级操作时，要主动确认是在沙盒操作还是需要宝宝在本机执行命令；如果需要本机生效，要给出完整的本机执行命令。
-
-
-
+- 2026-03-13 蚂蚁 cron “不适用”根因不是 agent 配置，而是 cron job 被自动注入了当前 webchat 的 `sessionKey`
+- 2026-03-16 蚂蚁获取 OPX token 失败的根因不是浏览器坏了，而是没走 `opx-redbook-create -> opx-auth` 的 skill 链路
+- 2026-03-30 松鼠采集链路的核心依赖是 Chrome CDP 9222；旧的 18800 Browser Relay 报错是另一套旧通道
+- 2026-03-31 主 session 写日记曾跑偏为 NoCode 工作记录，说明“system event 优先级”和“日记格式约束”必须写死

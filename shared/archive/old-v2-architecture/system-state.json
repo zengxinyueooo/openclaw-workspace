@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-03-04T11:00:00Z",
+  "workers": {
+    "topic-researcher": {
+      "status": "idle",
+      "current_task": null,
+      "progress": {"completed": 0, "failed": 0, "total": 0},
+      "last_heartbeat": null,
+      "last_checkpoint": null
+    },
+    "content-collector": {
+      "worker_id": "content-collector",
+      "status": "completed",
+      "current_task": null,
+      "task_start_time": null,
+      "progress": {"batch": "batch_1100", "notes": 12, "images": 19},
+      "consecutive_failures": 0,
+      "message": "上午补跑任务完成: 12条笔记, 19张图片",
+      "timestamp": "2026-03-04T11:00:00Z"
+    },
+    "content-writer": {
+      "status": "idle",
+      "current_task": null,
+      "progress": {"completed": 0, "failed": 0, "total": 0},
+      "last_heartbeat": null,
+      "last_checkpoint": null
+    },
+    "publisher": {
+      "status": "idle",
+      "current_task": null,
+      "progress": {"completed": 0, "failed": 0, "total": 0},
+      "last_heartbeat": null,
+      "last_checkpoint": null
+    }
+  },
+  "api_usage": {
+    "xiaohongshu": {
+      "requests_today": 5,
+      "last_request": "2026-03-04T11:00:00Z",
+      "rate_limit_hit": 0,
+      "status": "authenticated"
+    },
+    "image_generation": {
+      "requests_today": 0,
+      "last_request": null
+    }
+  },
+  "alerts": [],
+  "queue": {
+    "pending": [],
+    "running": [],
+    "failed": [],
+    "completed": ["batch_1100"]
+  }
+}

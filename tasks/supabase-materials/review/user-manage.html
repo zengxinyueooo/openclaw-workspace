@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户管理 · MCN 审核系统</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .manage-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--space-6) var(--space-5) var(--space-10);
+    }
+    .manage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    .manage-header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      box-shadow: var(--shadow);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: var(--space-5);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .admin-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: var(--space-3);
+    }
+    .admin-chip {
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      background: rgba(99, 102, 241, 0.2);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .user-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: var(--space-4);
+    }
+    .user-table th,
+    .user-table td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .user-table th {
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .user-table td:last-child {
+      text-align: right;
+    }
+    .danger-btn {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .form-row {
+      display: grid;
+      gap: var(--space-3);
+    }
+    .form-actions {
+      display: flex;
+      gap: var(--space-3);
+      align-items: center;
+    }
+    .primary-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .hint {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+    .message {
+      font-size: 0.85rem;
+      color: var(--success);
+      min-height: 18px;
+    }
+    .message.error {
+      color: var(--danger);
+    }
+  </style>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    Auth.requireAdmin();
+  </script>
+</head>
+<body>
+<nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;">
+  <a href="requirement.html" style="color:#94a3b8;text-decoration:none;">需求追踪</a>
+  <a href="index.html" style="color:#94a3b8;text-decoration:none;">素材审核</a>
+  <a href="image-select.html" style="color:#94a3b8;text-decoration:none;">生图审核</a>
+  <a href="draft-review.html" style="color:#94a3b8;text-decoration:none;">草稿审核</a>
+  <a href="dashboard.html" style="color:#94a3b8;text-decoration:none;">数据看板</a>
+  <a href="tasks.html" style="color:#94a3b8;text-decoration:none;">任务看板</a>
+  <a href="command-log.html" style="color:#94a3b8;text-decoration:none;">指令日志</a>
+  <a href="user-manage.html" style="color:#94a3b8;text-decoration:none;">用户管理</a>
+</nav>
+<script>
+(function(){
+  var u = localStorage.getItem('mcn_current_user');
+  if(u) document.getElementById('mcn-nav').style.display='flex';
+  // highlight current page
+  var links = document.querySelectorAll('#mcn-nav a');
+  var path = location.pathname.split('/').pop() || 'index.html';
+  links.forEach(function(a){
+    if(a.getAttribute('href') === path){
+      a.style.color='#6366f1';
+      a.style.fontWeight='600';
+    }
+    a.addEventListener('mouseover',function(){this.style.color='#e2e8f0';});
+    a.addEventListener('mouseout',function(){
+      if(this.getAttribute('href')===path){this.style.color='#6366f1';}
+      else{this.style.color='#94a3b8';}
+    });
+  });
+})();
+</script>
+
+  <div class="manage-wrap">
+    <header class="manage-header">
+      <div>
+        <h1>用户管理</h1>
+        <p class="subtitle">仅超级管理员可添加或删除普通用户账号</p>
+      </div>
+      <span class="badge">超级管理员</span>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>超级管理员</h2>
+        <p class="subtitle">以下账号拥有全部管理权限</p>
+        <div class="admin-list" id="admin-list"></div>
+      </section>
+
+      <section class="card">
+        <h2>添加普通用户</h2>
+        <form id="add-user-form" class="form-row">
+          <label>
+            用户名
+            <input type="text" id="new-username" placeholder="请输入用户名" required>
+          </label>
+          <label>
+            密码
+            <input type="password" id="new-password" placeholder="请输入密码" required>
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="primary-btn">添加用户</button>
+            <span class="message" id="form-message"></span>
+          </div>
+          <div class="hint">普通用户登录后只可访问审核页面。</div>
+        </form>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top: var(--space-6);">
+      <h2>普通用户列表</h2>
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>用户名</th>
+            <th>权限</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="user-table-body"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const adminList = document.getElementById('admin-list');
+    const form = document.getElementById('add-user-form');
+    const message = document.getElementById('form-message');
+    const tableBody = document.getElementById('user-table-body');
+
+    function renderAdmins() {
+      adminList.innerHTML = '';
+      Auth.ADMIN_USERS.forEach((name) => {
+        const chip = document.createElement('span');
+        chip.className = 'admin-chip';
+        chip.textContent = name;
+        adminList.appendChild(chip);
+      });
+    }
+
+    function renderUsers() {
+      const users = Auth.getUsers();
+      tableBody.innerHTML = '';
+      if (!users.length) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="3" style="color: var(--text-muted);">暂无普通用户</td>';
+        tableBody.appendChild(row);
+        return;
+      }
+      users.forEach((user) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${user.username}</td>
+          <td>普通用户</td>
+          <td><button class="danger-btn" data-user="${user.username}">删除</button></td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function setMessage(text, isError) {
+      message.textContent = text;
+      message.classList.toggle('error', Boolean(isError));
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setMessage('');
+      const username = document.getElementById('new-username').value;
+      const password = document.getElementById('new-password').value;
+      const result = Auth.addUser(username, password);
+      if (!result.ok) {
+        setMessage(result.message || '添加失败。', true);
+        return;
+      }
+      form.reset();
+      renderUsers();
+      setMessage('用户已添加。');
+    });
+
+    tableBody.addEventListener('click', (event) => {
+      const btn = event.target.closest('button[data-user]');
+      if (!btn) return;
+      const username = btn.dataset.user;
+      const confirmed = window.confirm(`确认删除用户 ${username} 吗？`);
+      if (!confirmed) return;
+      Auth.removeUser(username);
+      renderUsers();
+    });
+
+    renderAdmins();
+    renderUsers();
+  </script>
+</body>
+</html>

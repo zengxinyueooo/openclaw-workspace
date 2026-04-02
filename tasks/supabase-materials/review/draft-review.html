@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>草稿终审</title>
+  <link rel="stylesheet" href="shared.css" />
+  <link rel="stylesheet" href="draft-review.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    Auth.requireLogin();
+  </script>
+</head>
+<body>
+<nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;">
+  <a href="requirement.html" style="color:#94a3b8;text-decoration:none;">需求追踪</a>
+  <a href="index.html" style="color:#94a3b8;text-decoration:none;">素材审核</a>
+  <a href="image-select.html" style="color:#94a3b8;text-decoration:none;">生图审核</a>
+  <a href="draft-review.html" style="color:#94a3b8;text-decoration:none;">草稿审核</a>
+  <a href="dashboard.html" style="color:#94a3b8;text-decoration:none;">数据看板</a>
+  <a href="tasks.html" style="color:#94a3b8;text-decoration:none;">任务看板</a>
+  <a href="command-log.html" style="color:#94a3b8;text-decoration:none;">指令日志</a>
+  <a href="user-manage.html" style="color:#94a3b8;text-decoration:none;">用户管理</a>
+</nav>
+<script>
+(function(){
+  var u = localStorage.getItem('mcn_current_user');
+  if(u) document.getElementById('mcn-nav').style.display='flex';
+  // highlight current page
+  var links = document.querySelectorAll('#mcn-nav a');
+  var path = location.pathname.split('/').pop() || 'index.html';
+  links.forEach(function(a){
+    if(a.getAttribute('href') === path){
+      a.style.color='#6366f1';
+      a.style.fontWeight='600';
+    }
+    a.addEventListener('mouseover',function(){this.style.color='#e2e8f0';});
+    a.addEventListener('mouseout',function(){
+      if(this.getAttribute('href')===path){this.style.color='#6366f1';}
+      else{this.style.color='#94a3b8';}
+    });
+  });
+})();
+</script>
+
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1 id="page-title">草稿终审</h1>
+        <p class="subtitle" id="page-subtitle">从候选内容中确定最终发布版本</p>
+      </div>
+      <div class="status" id="status">未连接</div>
+    </header>
+
+    <section class="config" id="config">
+      <label>
+        Supabase 地址
+        <input id="supabase-url" type="text" placeholder="https://xxxx.supabase.co" />
+      </label>
+      <label>
+        匿名密钥
+        <input id="supabase-key" type="password" placeholder="eyJhbGci..." />
+      </label>
+      <button id="connect">连接</button>
+    </section>
+
+    <section id="draft-list" class="draft-list" style="display:none;">
+      <div class="section-head">
+        <h2>草稿列表</h2>
+        <div class="head-actions">
+          <button id="refresh-drafts" class="ghost">刷新</button>
+        </div>
+      </div>
+      <div id="draft-items" class="draft-items"></div>
+    </section>
+
+    <section id="draft-editor" class="draft-editor" style="display:none;">
+      <div class="section-head">
+        <h2 id="editor-title">草稿终审</h2>
+        <div class="head-actions">
+          <button id="back-to-list" class="ghost">返回列表</button>
+          <button id="reload-draft" class="ghost">重新加载</button>
+        </div>
+      </div>
+      <div id="draft-meta" class="draft-meta"></div>
+
+      <div class="editor-layout">
+        <section class="panel image-panel">
+          <div class="panel-head">
+            <h3>图片预览</h3>
+            <div class="muted" id="image-count">0 张</div>
+          </div>
+          <div class="image-list" id="image-list"></div>
+          <p class="panel-tip">拖拽可调整顺序，点击设置封面，点击放大预览。</p>
+        </section>
+
+        <section class="panel form-panel">
+          <div class="field">
+            <div class="field-head">
+              <h3>标题</h3>
+              <span class="muted">单选</span>
+            </div>
+            <div id="title-options" class="option-list"></div>
+            <label class="inline-input">
+              自定义标题
+              <input id="custom-title" type="text" placeholder="输入自定义标题" />
+            </label>
+          </div>
+
+          <div class="field">
+            <div class="field-head">
+              <h3>正文</h3>
+              <span class="muted">多版本预览</span>
+            </div>
+            <div id="content-tabs" class="tabs"></div>
+            <textarea id="content-editor" rows="10" placeholder="请输入最终正文"></textarea>
+          </div>
+
+          <div class="field">
+            <div class="field-head">
+              <h3>话题标签</h3>
+              <span class="muted">可多选</span>
+            </div>
+            <div id="tag-options" class="tag-options"></div>
+            <div class="add-tag-row">
+              <input id="custom-tag" type="text" placeholder="输入新标签，回车添加" />
+              <button id="add-tag" type="button" class="ghost">添加</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-head">
+              <h3>配图建议 / 分镜文案</h3>
+              <span class="muted">参考</span>
+            </div>
+            <div id="image-notes" class="image-notes"></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <div class="lightbox-inner">
+      <img id="lightbox-image" alt="预览" />
+      <button id="lightbox-close">关闭</button>
+    </div>
+  </div>
+
+  <div class="bottom-bar" id="bottom-bar" style="display:none;">
+    <div class="bottom-content">
+      <div class="bottom-status" id="bottom-status">等待选择</div>
+      <div class="bottom-actions">
+        <button id="delete-draft" class="ghost danger">删除</button>
+        <button id="approve-draft" class="primary">通过</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="draft-review.js"></script>
+</body>
+</html>

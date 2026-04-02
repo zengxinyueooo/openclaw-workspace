@@ -1,0 +1,27 @@
+{
+  "id": 15,
+  "local_id": "wulala",
+  "phone": "15356245157",
+  "platform": "xiaohongshu",
+  "nickname": "乌拉拉✨",
+  "device_id": "b46ba349",
+  "status": "normal",
+  "account_type": "分享号",
+  "business_type": [
+    "颜值"
+  ],
+  "primary_categories": [
+    "足疗按摩",
+    "洗浴"
+  ],
+  "secondary_categories": [
+    "美甲",
+    "酒吧"
+  ],
+  "cities": [],
+  "tags": [
+    "颜值"
+  ],
+  "persona_style": null,
+  "persona_portraitRef": "https://p0.meituan.net/dzusergrowthcontent/63f46da406965f6a6bbb9143d147c68c584044.png"
+}

@@ -1,0 +1,9 @@
+{
+  "worker_id": "content-collector",
+  "current_task": "collect_face_materials",
+  "data": {
+    "phase": "filter",
+    "filtered_count": 0
+  },
+  "timestamp": "2026-03-04T10:06:26.898933"
+}

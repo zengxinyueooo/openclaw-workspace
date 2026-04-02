@@ -1,0 +1,75 @@
+{
+  "collection_date": "2026-03-04",
+  "collection_time": "00:01",
+  "category": "颜值",
+  "source": "低粉爆款监控",
+  "topics": [
+    {
+      "id": "beauty_20260304_001",
+      "title": "方圆脸必学！这个修容法让脸小一圈",
+      "type": "素人改造",
+      "pain_point": "方圆脸显大",
+      "solution": "立体修容术",
+      "keywords": ["方圆脸", "修容", "小脸"],
+      "estimated_interaction": "5000+",
+      "content_structure": "Before/After对比 + 分步教程 + 产品清单",
+      "suggested_hook": "方圆脸的姐妹，别再这样修容了！",
+      "reference_accounts": ["素人改造日记"],
+      "trend_score": 9.2
+    },
+    {
+      "id": "beauty_20260304_002",
+      "title": "早八人5分钟伪素颜妆｜被同事问是不是素颜",
+      "type": "快速妆容",
+      "pain_point": "早上没时间化妆",
+      "solution": "5分钟伪素颜",
+      "keywords": ["早八妆", "伪素颜", "快速出门"],
+      "estimated_interaction": "8000+",
+      "content_structure": "护肤打底 + 精简步骤 + 持久技巧",
+      "suggested_hook": "早八人进！5分钟搞定伪素颜",
+      "reference_accounts": ["职场美妆博主"],
+      "trend_score": 9.5
+    },
+    {
+      "id": "beauty_20260304_003",
+      "title": "单眼皮肿眼泡｜这个眼妆让我眼睛大了一倍",
+      "type": "素人改造",
+      "pain_point": "单眼皮显眼睛小",
+      "solution": "消肿大眼术",
+      "keywords": ["单眼皮", "肿眼泡", "大眼妆"],
+      "estimated_interaction": "12000+",
+      "content_structure": "眼部问题分析 + 眼妆步骤 + 避雷指南",
+      "suggested_hook": "单眼皮别贴双眼皮贴了！试试这个",
+      "reference_accounts": ["单眼皮美妆"],
+      "trend_score": 9.8
+    },
+    {
+      "id": "beauty_20260304_004",
+      "title": "黄黑皮逆袭｜这3个色号让我白了两个度",
+      "type": "肤色改善",
+      "pain_point": "黄黑皮显暗沉",
+      "solution": "色号选择技巧",
+      "keywords": ["黄黑皮", "显白", "色号推荐"],
+      "estimated_interaction": "15000+",
+      "content_structure": "肤色测试 + 色号对比 + 妆容展示",
+      "suggested_hook": "黄黑皮别乱买！这3个色号才是真显白",
+      "reference_accounts": ["黄黑皮博主"],
+      "trend_score": 9.6
+    },
+    {
+      "id": "beauty_20260304_005",
+      "title": "学生党平价彩妆全套｜不到100元搞定日常妆",
+      "type": "平价好物",
+      "pain_point": "预算有限",
+      "solution": "高性价比产品清单",
+      "keywords": ["学生党", "平价彩妆", "全套"],
+      "estimated_interaction": "20000+",
+      "content_structure": "产品清单 + 试色对比 + 使用感受",
+      "suggested_hook": "生活费1000怎么买彩妆？这套够用了",
+      "reference_accounts": ["平价好物测评"],
+      "trend_score": 9.7
+    }
+  ],
+  "total_collected": 5,
+  "collection_method": "manual_curation"
+}

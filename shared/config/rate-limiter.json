@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-03-04T08:00:00Z",
+  "services": {
+    "xiaohongshu": {
+      "requests_per_minute": 20,
+      "requests_per_hour": 100,
+      "concurrent_workers": 1,
+      "retry_policy": {
+        "max_retries": 3,
+        "base_delay": 5,
+        "max_delay": 60,
+        "exponential_backoff": true
+      }
+    },
+    "image_generation": {
+      "requests_per_minute": 5,
+      "requests_per_hour": 50,
+      "concurrent_workers": 2
+    },
+    "image_upload": {
+      "requests_per_minute": 10,
+      "requests_per_hour": 200,
+      "concurrent_workers": 3
+    }
+  },
+  "circuit_breaker": {
+    "failure_threshold": 5,
+    "recovery_time": 300,
+    "half_open_requests": 3
+  }
+}

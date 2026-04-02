@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCN 审核系统 · 登录</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .auth-shell {
+      width: min(420px, 100%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-8) var(--space-6);
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+    }
+    .auth-shell::before {
+      content: "";
+      position: absolute;
+      inset: -40% 40% auto -40%;
+      height: 200px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.35), transparent 70%);
+      opacity: 0.7;
+    }
+    .auth-brand {
+      position: relative;
+      z-index: 1;
+      text-align: left;
+      margin-bottom: var(--space-6);
+    }
+    .auth-brand h1 {
+      font-size: 1.8rem;
+      margin-bottom: var(--space-2);
+    }
+    .auth-brand p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+    .auth-form {
+      display: grid;
+      gap: var(--space-4);
+      position: relative;
+      z-index: 1;
+    }
+    .auth-form input {
+      width: 100%;
+    }
+    .auth-actions {
+      display: grid;
+      gap: var(--space-3);
+    }
+    .auth-submit {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition-fast), transform var(--transition-fast);
+    }
+    .auth-submit:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+    .auth-hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .auth-error {
+      font-size: 0.85rem;
+      color: var(--danger);
+      min-height: 20px;
+    }
+  </style>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    Auth.redirectIfLoggedIn();
+  </script>
+</head>
+<body>
+  <main class="auth-shell">
+    <div class="auth-brand">
+      <h1>MCN 审核系统</h1>
+      <p>素材审核、草稿终审、任务看板统一入口</p>
+    </div>
+    <form class="auth-form" id="login-form">
+      <label>
+        用户名
+        <input type="text" id="login-username" placeholder="请输入用户名" autocomplete="username" required>
+      </label>
+      <label>
+        密码
+        <input type="password" id="login-password" placeholder="请输入密码" autocomplete="current-password" required>
+      </label>
+      <div class="auth-actions">
+        <button class="auth-submit" type="submit">登录</button>
+        <div class="auth-error" id="login-error"></div>
+        <div class="auth-hint">超级管理员账号：ninghaoran / zengxinyue / lipengyu</div>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    const form = document.getElementById('login-form');
+    const errorBox = document.getElementById('login-error');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorBox.textContent = '';
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+      const result = Auth.login(username, password);
+      if (!result.ok) {
+        errorBox.textContent = result.message || '登录失败，请重试。';
+        return;
+      }
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

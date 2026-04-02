@@ -1,0 +1,557 @@
+/* global supabase */
+const STATUS = { OK: "ok", ERROR: "error", DEFAULT: "default" };
+
+let client = null;
+let currentTaskId = null;
+let currentTask = null;
+let images = [];
+const selectedIds = new Set();
+
+// 人设参考图映射（从 shared/personas 生成）
+const PERSONA_REFS = {
+  "先叫Momo": { portrait: "https://img.meituan.net/dzusergrowthcontent/1141d96c336f309ca08a94b5c1bc26e81155511.png", styles: [] },
+  "沐沐木有烦恼": { portrait: "https://img.meituan.net/dzusergrowthcontent/0783f10c44757bb91f44b7db8b972663306584.jpg", styles: [] },
+  "李慢慢曼妙": { portrait: "https://img.meituan.net/dzusergrowthcontent/38b2f56baa655ea28ddcecaa7d63f4931364959.png", styles: [] },
+  "一只小糕糕": { portrait: "https://img.meituan.net/dzusergrowthcontent/987cb0ec713970b38ce121e915bdc718965767.png", styles: [] },
+  "增增哇嘎奶": { portrait: "https://img.meituan.net/dzusergrowthcontent/aeab1e99c76883338c31544bed559ac61986122.png", styles: [] },
+  "Momo不默默": { portrait: "https://img.meituan.net/dzusergrowthcontent/82eefd3030cf510cca831343338db9c11178247.png", styles: [] },
+  "小Lin晓晓": { portrait: "https://img.meituan.net/dzusergrowthcontent/42e3679ecdab745d0aa424e83e2dd7d01103459.png", styles: [] },
+  "糯糯糖要努力": { portrait: "https://img.meituan.net/dzusergrowthcontent/155cd3451f2284446a37008636dabff51033608.png", styles: [] },
+  "一只小晚晚": { portrait: "https://img.meituan.net/dzusergrowthcontent/85a423ad9f6a18ba86f9d4fe34314d391307800.png", styles: [] },
+  "乌拉拉": { portrait: "https://img.meituan.net/dzusergrowthcontent/63f46da406965f6a6bbb9143d147c68c584044.png", styles: [] }
+};
+
+const statusEl = document.getElementById("status");
+const connectBtn = document.getElementById("connect");
+const urlInput = document.getElementById("supabase-url");
+const keyInput = document.getElementById("supabase-key");
+const configSection = document.getElementById("config");
+
+const taskListSection = document.getElementById("task-list");
+const taskItemsEl = document.getElementById("task-items");
+const refreshTasksBtn = document.getElementById("refresh-tasks");
+
+const gallerySection = document.getElementById("gallery");
+const imageGrid = document.getElementById("image-grid");
+const galleryTitle = document.getElementById("gallery-title");
+const taskMetaEl = document.getElementById("task-meta");
+const backToListBtn = document.getElementById("back-to-list");
+
+const lightbox = document.getElementById("lightbox");
+const lightboxImage = document.getElementById("lightbox-image");
+const lightboxClose = document.getElementById("lightbox-close");
+
+const bottomBar = document.getElementById("bottom-bar");
+const selectedCountEl = document.getElementById("selected-count");
+const confirmBtn = document.getElementById("confirm-selection");
+
+const pageTitle = document.getElementById("page-title");
+const pageSubtitle = document.getElementById("page-subtitle");
+
+const urlParams = new URLSearchParams(window.location.search);
+currentTaskId = urlParams.get("task");
+
+const savedUrl = localStorage.getItem("supabaseUrl");
+const savedKey = localStorage.getItem("supabaseAnonKey");
+if (savedUrl) urlInput.value = savedUrl;
+if (savedKey) keyInput.value = savedKey;
+
+function setStatus(text, type = STATUS.DEFAULT) {
+  statusEl.textContent = text;
+  statusEl.className = type === STATUS.OK ? 'status ok'
+                     : type === STATUS.ERROR ? 'status error'
+                     : 'status';
+}
+
+function formatDate(iso) {
+  if (!iso) return "--";
+  const date = new Date(iso);
+  return new Intl.DateTimeFormat("zh-CN", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(date);
+}
+
+function showTaskList() {
+  taskListSection.style.display = "";
+  gallerySection.style.display = "none";
+  bottomBar.style.display = "none";
+  pageTitle.textContent = "生成图审核";
+  pageSubtitle.textContent = "选择通过的人脸图";
+}
+
+function showGallery() {
+  taskListSection.style.display = "none";
+  gallerySection.style.display = "";
+  bottomBar.style.display = "";
+}
+
+function updateSelectedCount() {
+  selectedCountEl.textContent = String(selectedIds.size);
+  confirmBtn.disabled = selectedIds.size === 0;
+}
+
+function renderTaskList(tasks) {
+  taskItemsEl.innerHTML = "";
+  if (!tasks.length) {
+    taskItemsEl.innerHTML = "<div class=\"task-meta\">暂无已完成任务</div>";
+    return;
+  }
+
+  tasks.forEach((task) => {
+    const card = document.createElement("a");
+    card.className = "task-card";
+    const createdAt = formatDate(task.created_at);
+    const isReviewed = task.status === "reviewed";
+    const isNeedsRegen = task.status === "needs_regen";
+    if (isReviewed) card.className += " reviewed";
+    if (isNeedsRegen) card.className += " needs-regen";
+    const statusText = isNeedsRegen ? '待重新生成' : (isReviewed ? '已审核 ✓' : '待审核');
+    const statusClass = isNeedsRegen ? 'needs-regen' : (isReviewed ? 'reviewed' : '');
+
+    // 已审核的不能再点进去审核，只能查看或删除
+    if (!isReviewed) {
+      card.href = `?task=${encodeURIComponent(task.id)}`;
+    }
+
+    card.innerHTML = `
+      <div class="task-top">
+        <div class="task-name">${task.persona_name}</div>
+        <div class="task-actions">
+          <div class="task-status ${statusClass}">${statusText}</div>
+          <button class="task-delete-btn" data-task-id="${task.id}" title="删除任务">删除</button>
+        </div>
+      </div>
+      <div class="task-meta">
+        <div class="task-counts">
+          <span>生成 ${task.generated_count ?? 0}</span>
+          <span>通过 ${task.face_passed_count ?? 0}</span>
+        </div>
+        <div>创建时间：${createdAt}</div>
+      </div>
+    `;
+    taskItemsEl.appendChild(card);
+  });
+
+  // 绑定删除按钮
+  taskItemsEl.querySelectorAll(".task-delete-btn").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const taskId = btn.dataset.taskId;
+      if (!confirm("确认删除此任务？任务将标记为已删除。")) return;
+      btn.disabled = true;
+      btn.textContent = "...";
+      await client
+        .from("generation_tasks")
+        .update({ status: "deleted" })
+        .eq("id", taskId);
+      btn.closest(".task-card").remove();
+      setStatus("任务已删除", "ok");
+    });
+  });
+}
+
+async function fetchTasks() {
+  if (!client) return;
+  setStatus("正在加载任务...", "default");
+  taskItemsEl.innerHTML = '<div class="skeleton" style="height: 100px;"></div><div class="skeleton" style="height: 100px;"></div>';
+
+  const { data, error } = await client
+    .from("generation_tasks")
+    .select("id,persona_name,status,generated_count,face_passed_count,created_at")
+    .in("status", ["done"])
+    .gt("generated_count", 0)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    setStatus(`加载失败：${error.message}`);
+    return;
+  }
+
+  renderTaskList(data || []);
+  setStatus("已连接", "ok");
+  showTaskList();
+}
+
+const refImagesEl = document.getElementById("ref-images");
+
+function renderTaskMeta(task) {
+  if (!task) {
+    taskMetaEl.innerHTML = "";
+    return;
+  }
+  const createdAt = formatDate(task.created_at);
+  taskMetaEl.classList.add("badge-row");
+  taskMetaEl.innerHTML = `
+    <span class="badge">人物：${task.persona_name}</span>
+    <span class="badge">生成 ${task.generated_count ?? 0}</span>
+    <span class="badge">通过 ${task.face_passed_count ?? 0}</span>
+    <span class="badge">创建 ${createdAt}</span>
+  `;
+}
+
+function renderRefImages(personaName, task) {
+  const refs = PERSONA_REFS[personaName];
+  // 优先用任务里存的 URL，兜底用映射
+  const portraitUrl = (task && task.portrait_url) || (refs && refs.portrait) || "";
+  const styleUrl = (task && task.style_url) || portraitUrl;
+  if (!portraitUrl) {
+    refImagesEl.style.display = "none";
+    return;
+  }
+  refImagesEl.style.display = "";
+  let html = '<div class="ref-header">参考图</div><div class="ref-grid">';
+  html += `<div class="ref-card"><img src="${portraitUrl}" alt="肖像参考" /><div class="ref-label">肖像参考</div></div>`;
+  html += `<div class="ref-card"><img src="${styleUrl}" alt="风格参考" /><div class="ref-label">风格参考</div></div>`;
+  // 额外风格参考（如果人设里有）
+  if (refs && refs.styles && refs.styles.length) {
+    refs.styles.forEach((url, i) => {
+      html += `<div class="ref-card"><img src="${url}" alt="风格参考 ${i + 1}" /><div class="ref-label">风格参考 ${i + 1}</div></div>`;
+    });
+  }
+  html += '</div>';
+  refImagesEl.innerHTML = html;
+
+  // 点击参考图也能 lightbox 预览
+  refImagesEl.querySelectorAll("img").forEach((img) => {
+    img.addEventListener("click", () => {
+      lightboxImage.src = img.src;
+      lightbox.classList.add("show");
+    });
+  });
+}
+
+function renderImages(list) {
+  imageGrid.innerHTML = "";
+  if (!list.length) {
+    imageGrid.innerHTML = "<div class=\"task-meta\">暂无图片</div>";
+    return;
+  }
+
+  // 分组：通过 > AI味过滤 > 人脸未通过
+  const good = list.filter(i => i.face_passed && i.status !== "ai_rejected");
+  const aiRejected = list.filter(i => i.face_passed && i.status === "ai_rejected");
+  const faceFailed = list.filter(i => !i.face_passed);
+
+  if (good.length) {
+    const header = document.createElement("div");
+    header.className = "grid-section-header";
+    header.innerHTML = `<span class="section-tag passed">通过</span> ${good.length} 张`;
+    imageGrid.appendChild(header);
+  }
+  good.forEach(img => renderOneImage(img));
+
+  if (aiRejected.length) {
+    const header = document.createElement("div");
+    header.className = "grid-section-header";
+    header.innerHTML = `<span class="section-tag ai-taste">AI味过重</span> ${aiRejected.length} 张`;
+    imageGrid.appendChild(header);
+  }
+  aiRejected.forEach(img => renderOneImage(img));
+
+  if (faceFailed.length) {
+    const header = document.createElement("div");
+    header.className = "grid-section-header";
+    header.innerHTML = `<span class="section-tag failed">人脸未通过</span> ${faceFailed.length} 张`;
+    imageGrid.appendChild(header);
+  }
+  faceFailed.forEach(img => renderOneImage(img));
+}
+
+function renderOneImage(img) {
+    const card = document.createElement("div");
+    let extraClass = "";
+    if (!img.face_passed) extraClass = " face-failed";
+    else if (img.status === "ai_rejected") extraClass = " ai-rejected";
+    card.className = "image-card" + extraClass;
+    if (selectedIds.has(img.id)) card.classList.add("selected");
+
+    const imageEl = document.createElement("img");
+    imageEl.src = img.image_url;
+    imageEl.alt = img.id;
+    imageEl.addEventListener("click", () => {
+      lightboxImage.src = img.image_url;
+      lightbox.classList.add("show");
+    });
+
+    const overlay = document.createElement("div");
+    overlay.className = "image-overlay";
+    const score = document.createElement("div");
+    score.className = "score-badge";
+    const scoreValue = typeof img.aesthetic_score === "number"
+      ? img.aesthetic_score.toFixed(2)
+      : "--";
+    score.textContent = `美感 ${scoreValue}`;
+
+    const distance = document.createElement("div");
+    distance.className = "distance-text";
+    const distanceValue = typeof img.face_distance === "number"
+      ? img.face_distance.toFixed(3)
+      : "--";
+    distance.textContent = `距离 ${distanceValue}`;
+
+    // AI味分数
+    const aiTaste = document.createElement("div");
+    aiTaste.className = "ai-taste-badge";
+    if (typeof img.ai_taste_score === "number") {
+      aiTaste.textContent = `AI味 ${img.ai_taste_score}`;
+      if (img.ai_taste_score >= 60) aiTaste.classList.add("high");
+    }
+
+    overlay.appendChild(score);
+    overlay.appendChild(aiTaste);
+    overlay.appendChild(document.createElement("div"));
+    overlay.appendChild(distance);
+
+    const actions = document.createElement("div");
+    actions.className = "image-actions";
+
+    const previewBtn = document.createElement("button");
+    previewBtn.className = "preview-btn";
+    previewBtn.textContent = "预览";
+    previewBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      lightboxImage.src = img.image_url;
+      lightbox.classList.add("show");
+    });
+
+    const checkboxWrap = document.createElement("label");
+    checkboxWrap.className = "checkbox-wrap";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = selectedIds.has(img.id);
+    const checkboxText = document.createElement("span");
+    checkboxText.textContent = "选择";
+
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        selectedIds.add(img.id);
+        card.classList.add("selected");
+      } else {
+        selectedIds.delete(img.id);
+        card.classList.remove("selected");
+      }
+      updateSelectedCount();
+    });
+
+    checkboxWrap.appendChild(checkbox);
+    checkboxWrap.appendChild(checkboxText);
+
+    actions.appendChild(previewBtn);
+    actions.appendChild(checkboxWrap);
+
+    card.appendChild(imageEl);
+    card.appendChild(overlay);
+    card.appendChild(actions);
+
+    imageGrid.appendChild(card);
+}
+
+async function fetchGallery(taskId) {
+  if (!client) return;
+  if (!taskId) {
+    fetchTasks();
+    return;
+  }
+
+  setStatus("正在加载任务信息...", "default");
+  imageGrid.innerHTML = '<div class="skeleton" style="height: 220px; grid-column: 1 / -1;"></div><div class="skeleton" style="height: 220px;"></div><div class="skeleton" style="height: 220px;"></div>';
+  const { data: task, error: taskError } = await client
+    .from("generation_tasks")
+    .select("id,persona_name,generated_count,face_passed_count,status,created_at,portrait_url,style_url")
+    .eq("id", taskId)
+    .single();
+
+  if (taskError) {
+    setStatus(`加载任务失败：${taskError.message}`, "error");
+    return;
+  }
+
+  currentTask = task;
+  galleryTitle.textContent = `图片画廊 · ${task.persona_name}`;
+  renderTaskMeta(task);
+  renderRefImages(task.persona_name, task);
+
+  setStatus("正在加载图片...");
+  const { data: imgs, error } = await client
+    .from("generated_images")
+    .select("id,image_url,aesthetic_score,face_distance,face_passed,status,ai_taste_score,ai_taste_reason")
+    .eq("task_id", taskId)
+    .order("face_passed", { ascending: false })
+    .order("aesthetic_score", { ascending: false, nullsFirst: false });
+
+  if (error) {
+    setStatus(`加载图片失败：${error.message}`);
+    return;
+  }
+
+  images = imgs || [];
+  selectedIds.clear();
+  updateSelectedCount();
+  renderImages(images);
+  setStatus(`已加载 ${images.length} 张`, "ok");
+  showGallery();
+}
+
+async function confirmSelection() {
+  if (!client || !currentTask) return;
+  if (selectedIds.size === 0) return;
+
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = "提交中...";
+  setStatus("正在提交选择...", "default");
+
+  const imageIdArray = Array.from(selectedIds);
+
+  const { error: insertError } = await client
+    .from("note_drafts")
+    .insert({
+      persona_name: currentTask.persona_name,
+      image_ids: imageIdArray,
+      status: "draft"
+    });
+
+  if (insertError) {
+    setStatus(`提交失败：${insertError.message}`, "error");
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = "确认选择";
+    return;
+  }
+
+  // 标记选中的为 approved
+  const now = new Date().toISOString();
+  const { error: approveError } = await client
+    .from("generated_images")
+    .update({ status: "selected", human_verdict: "approved", reviewed_at: now })
+    .in("id", imageIdArray);
+
+  if (approveError) {
+    setStatus(`更新图片失败：${approveError.message}`, "error");
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = "确认选择";
+    return;
+  }
+
+  // 标记未选中的人脸通过图片为 rejected
+  const rejectedIds = images
+    .filter(img => img.face_passed && !selectedIds.has(img.id))
+    .map(img => img.id);
+  if (rejectedIds.length > 0) {
+    await client
+      .from("generated_images")
+      .update({ human_verdict: "rejected", reject_reason: "ai_taste", reviewed_at: now })
+      .in("id", rejectedIds);
+  }
+
+  // 标记任务为已审核
+  await client
+    .from("generation_tasks")
+    .update({ status: "reviewed" })
+    .eq("id", currentTask.id);
+
+  setStatus("审核完成 ✓", "ok");
+  confirmBtn.textContent = "已完成";
+  setTimeout(() => {
+    window.location.href = window.location.pathname;
+  }, 800);
+}
+
+refreshTasksBtn.addEventListener("click", fetchTasks);
+backToListBtn.addEventListener("click", () => {
+  window.location.href = window.location.pathname;
+});
+
+lightboxClose.addEventListener("click", () => {
+  lightbox.classList.remove("show");
+});
+
+lightbox.addEventListener("click", (event) => {
+  if (event.target === lightbox) {
+    lightbox.classList.remove("show");
+  }
+});
+
+confirmBtn.addEventListener("click", confirmSelection);
+
+const rejectAllBtn = document.getElementById("reject-all");
+rejectAllBtn.addEventListener("click", async () => {
+  if (!client || !currentTask) return;
+  if (!confirm("确认全部不合格？将标记所有图片为拒绝，并触发该人设重新生成。")) return;
+
+  rejectAllBtn.disabled = true;
+  rejectAllBtn.textContent = "处理中...";
+  setStatus("正在标记全部不合格...", "default");
+
+  const now = new Date().toISOString();
+
+  // 标记所有图片为 rejected
+  const allIds = images.map(img => img.id);
+  if (allIds.length > 0) {
+    await client
+      .from("generated_images")
+      .update({ human_verdict: "rejected", reject_reason: "face_wrong", reviewed_at: now })
+      .in("id", allIds);
+  }
+
+  // 任务状态改为 needs_regen
+  await client
+    .from("generation_tasks")
+    .update({ status: "needs_regen" })
+    .eq("id", currentTask.id);
+
+  setStatus("已标记全部不合格，将自动重新生成 ✓", "ok");
+  rejectAllBtn.textContent = "已标记";
+  setTimeout(() => {
+    window.location.href = window.location.pathname;
+  }, 1200);
+});
+
+async function initConnection(url, key, isAuto = false) {
+  if (!url || !key) {
+    setStatus("请输入 Supabase 地址和匿名密钥", STATUS.ERROR);
+    return false;
+  }
+
+  setStatus(isAuto ? "正在自动连接..." : "正在连接...", STATUS.DEFAULT);
+  if (!isAuto) connectBtn.disabled = true;
+
+  try {
+    client = supabase.createClient(url, key);
+    localStorage.setItem("supabaseUrl", url);
+    localStorage.setItem("supabaseAnonKey", key);
+    configSection.style.display = "none";
+
+    if (currentTaskId) {
+      await fetchGallery(currentTaskId);
+    } else {
+      await fetchTasks();
+    }
+    return true;
+  } catch (err) {
+    setStatus(`连接失败: ${err.message}`, STATUS.ERROR);
+    client = null;
+    return false;
+  } finally {
+    if (!isAuto) connectBtn.disabled = false;
+  }
+}
+
+connectBtn.addEventListener("click", () => {
+  initConnection(urlInput.value.trim(), keyInput.value.trim(), false);
+});
+
+const defaults = window.SUPABASE_DEFAULTS || {};
+if (savedUrl || defaults.url) {
+  urlInput.value = savedUrl || defaults.url;
+}
+if (savedKey || defaults.anonKey) {
+  keyInput.value = savedKey || defaults.anonKey;
+}
+
+if (urlInput.value && keyInput.value) {
+  initConnection(urlInput.value.trim(), keyInput.value.trim(), true);
+} else {
+  setStatus("请填写 Supabase 连接信息", STATUS.DEFAULT);
+  showTaskList();
+}

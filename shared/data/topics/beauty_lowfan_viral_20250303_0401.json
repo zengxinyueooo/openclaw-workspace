@@ -1,0 +1,68 @@
+{
+  "collection_date": "2026-03-03",
+  "collection_time": "04:01",
+  "category": "颜值",
+  "source": "manual_curation_based_on_patterns",
+  "topics": [
+    {
+      "id": "topic_004",
+      "title": "单眼皮肿眼泡｜韩系无辜狗狗眼妆教程",
+      "title_tags": ["单眼皮", "肿眼泡", "韩系眼妆", "狗狗眼"],
+      "content_pattern": "眼部特写 + 分步画法 + 前后对比",
+      "engagement_indicators": {
+        "estimated_likes": "6000-15000",
+        "estimated_saves": "4000-8000",
+        "estimated_comments": "300-800"
+      },
+      "why_viral": "痛点精准(单眼皮困扰人群大)+ 韩系风格热门 + 效果对比强烈",
+      "target_audience": "18-28岁单眼皮女生",
+      "content_angle": "眼妆改造 / 痛点解决",
+      "recommended_format": "视频教程(眼部特写)",
+      "keywords": ["单眼皮眼妆", "肿眼泡教程", "韩系眼妆", "狗狗眼妆"],
+      "reference_notes": "低粉账号爆款特征：精准定位小众痛点人群"
+    },
+    {
+      "id": "topic_005",
+      "title": "黄黑皮逆袭｜这3个 color 让我白了两个度",
+      "title_tags": ["黄黑皮", "显白", "肤色改善", "色彩穿搭"],
+      "content_pattern": "肤色测试 + 颜色对比 + 穿搭示范",
+      "engagement_indicators": {
+        "estimated_likes": "8000-20000",
+        "estimated_saves": "6000-12000",
+        "estimated_comments": "400-1000"
+      },
+      "why_viral": "肤色焦虑是高频痛点 + 解决方案具体可执行 + 视觉反差大",
+      "target_audience": "20-35岁黄黑皮女性",
+      "content_angle": "肤色改造 / 实用干货",
+      "recommended_format": "图文/视频对比",
+      "keywords": ["黄黑皮穿搭", "显白颜色", "肤色改善", "黑黄皮妆容"],
+      "reference_notes": "收藏率高选题：实用干货型内容"
+    },
+    {
+      "id": "topic_006",
+      "title": "方圆脸发型救星｜八字刘海裁剪教程（附自剪版）",
+      "title_tags": ["方圆脸", "八字刘海", "发型教程", "自剪刘海"],
+      "content_pattern": "脸型分析 + 刘海裁剪步骤 + 效果展示",
+      "engagement_indicators": {
+        "estimated_likes": "10000-30000",
+        "estimated_saves": "8000-15000",
+        "estimated_comments": "500-1500"
+      },
+      "why_viral": "方圆脸是颜值区大流量词 + 自剪教程省钱实用 + 互动性强",
+      "target_audience": "18-30岁方圆脸女生",
+      "content_angle": "发型改造 / 省钱教程",
+      "recommended_format": "视频教程",
+      "keywords": ["方圆脸发型", "八字刘海", "自剪刘海教程", "脸型修饰"],
+      "reference_notes": "高收藏高评论：实用教程类内容"
+    },
+    {
+      "id": "topic_007",
+      "title": "瑕疵皮0粉感底妆｜素颜被夸皮肤好",
+      "title_tags": ["瑕疵皮", "底妆教程", "0粉感", "伪素颜底妆"],
+      "content_pattern": "皮肤状态展示 + 底妆技巧 + 成品对比",
+      "engagement_indicators": {
+        "estimated_likes": "5000-12000",
+        "estimated_saves": "4000-8000",
+        "estimated_comments": "200-600"
+      },
+      "why_viral": "瑕疵皮人群广泛 + 0粉感诉求强烈 + 教程种草属性强",

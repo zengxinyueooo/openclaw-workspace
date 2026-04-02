@@ -1,10 +1,16 @@
 {
   "mcpServers": {
-    "conan_device_management": {
-      "baseUrl": "http://mcphub-server.sankuai.com/mcphub-b/4a6adb127ba748",
+    "exa": {
+      "baseUrl": "https://mcp.exa.ai/mcp"
+    },
+    "xiaohongshu": {
+      "baseUrl": "https://mcp.zouying.work/mcp",
       "headers": {
-        "Authorization": "Bearer AT_gYbv66X3IYZLCtoyDKsNKhvKsDwYZZhB_QXdRQUFBQWJCa3ROVXd3aURJamtRbzVraUNmd0lpSGRteWlDcHUvY0F3Z0JBQUFBWGVuL3J6elgrOWErRDVGbWFTTWgySitTYi84M2xRaW1ZU3JqRE84bnFnbjZKSzVicFlLSExEd2lpM2ZnclZ0am52UnAxSWsrRkk2aTJwMVlRYmJoVGJNTWU3T0JsY0FjSDBzR01NWnliSzF6Qldxd2Jma1BwZ2pIVTVZMGJ3PT0**mtsso**vfUCjbWLsKddRScBs1fcT1EzHbafsjSGJr8is7QXghnOrms74_VUF2Ao9s5pttgfE8UohkKKKDTDARGKOzsVVA**MjUzNTQyNjMsemVuZ3hpbnl1ZTA0LOabvuaso-aCpix6ZW5neGlueXVlMDRAbWVpdHVhbi5jb20sMSxlZGNfMjUzNTQyNjMsMTc3MzY3NzM4ODExNiw1YTdkZDUyM2YwLGJiNjYxYWU3ZGNhZjQxYzE5NmMwKjM3YmQxNDNhY2Q0LDE3NzM2NjY1ODgxMTY"
+        "X-API-Key": "sk_RZDOZPM8RkT1qT5KJteDoYPvzn1lcWc4TkWwfkEukW8="
       }
+    },
+    "conan_device_management": {
+      "baseUrl": "http://mcphub-server.sankuai.com/mcphub-b/4a6adb127ba748"
     }
   },
   "imports": []

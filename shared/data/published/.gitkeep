@@ -1,0 +1,6 @@
+# 占位文件
+
+这是 published 目录，用于存放已发布内容的记录。
+
+published/
+  └── [publish-id].json   # 发布记录（含链接、时间、结果）

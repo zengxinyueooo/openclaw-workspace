@@ -1,0 +1,27 @@
+{
+  "id": 17,
+  "local_id": "xianjiaomomo",
+  "phone": "17621096237",
+  "platform": "xiaohongshu",
+  "nickname": "先叫Momo",
+  "device_id": "62056a17",
+  "status": "normal",
+  "account_type": "分享号",
+  "business_type": [
+    "颜值"
+  ],
+  "primary_categories": [
+    "娃娃机",
+    "酒吧"
+  ],
+  "secondary_categories": [
+    "美甲",
+    "洗浴"
+  ],
+  "cities": [],
+  "tags": [
+    "颜值"
+  ],
+  "persona_style": null,
+  "persona_portraitRef": "https://p0.meituan.net/dzusergrowthcontent/036033675897e2c69cf7f1ea776b4c871184315.png"
+}

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCN 动物团 · 指令日志</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script>
+  Auth.requireLogin();
+</script>
+<link rel="stylesheet" href="shared.css">
+<style>
+/* Page-specific styles */
+.log-filters {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+.chip {
+  padding: 6px 16px; border-radius: var(--radius-full);
+  font-size: 0.8125rem; font-weight: 600;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.chip:hover { border-color: var(--border-hover); color: var(--text); }
+.chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.chip.active[data-agent="eagle"] { background: rgba(96,165,250,.15); border-color: #60a5fa; color: #60a5fa; }
+.chip.active[data-agent="squirrel"] { background: rgba(251,191,36,.15); border-color: #fbbf24; color: #fbbf24; }
+.chip.active[data-agent="bee"] { background: rgba(251,146,60,.15); border-color: #fb923c; color: #fb923c; }
+.chip.active[data-agent="ant"] { background: rgba(248,113,113,.15); border-color: #f87171; color: #f87171; }
+.chip.active[data-agent="main"] { background: rgba(168,85,247,.15); border-color: #a855f7; color: #a855f7; }
+
+/* Timeline */
+.timeline { position: relative; padding-left: 32px; }
+.timeline::before {
+  content: ""; position: absolute; left: 11px; top: 0; bottom: 0;
+  width: 2px; background: linear-gradient(180deg, var(--accent) 0%, var(--border) 100%);
+  border-radius: 2px;
+}
+.log-entry {
+  position: relative; margin-bottom: var(--space-5);
+  animation: fadeSlideIn 0.3s ease-out both;
+}
+.log-entry:nth-child(1) { animation-delay: 0s; }
+.log-entry:nth-child(2) { animation-delay: 0.04s; }
+.log-entry:nth-child(3) { animation-delay: 0.08s; }
+.log-entry:nth-child(4) { animation-delay: 0.12s; }
+.log-entry:nth-child(5) { animation-delay: 0.16s; }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+/* Timeline dot */
+.log-dot {
+  position: absolute; left: -27px; top: 6px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--bg); border: 2.5px solid var(--accent);
+  z-index: 2;
+}
+.log-dot.done { border-color: var(--success); background: var(--success); box-shadow: 0 0 8px rgba(16,185,129,.4); }
+.log-dot.failed { border-color: var(--danger); background: var(--danger); box-shadow: 0 0 8px rgba(239,68,68,.4); }
+.log-dot.running { border-color: var(--warning); animation: dotPulse 1.5s ease-in-out infinite; }
+.log-dot.pending { border-color: var(--text-muted); }
+@keyframes dotPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,.4); }
+  50% { box-shadow: 0 0 0 6px rgba(245,158,11,0); }
+}
+
+/* Card body */
+.log-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5);
+  transition: all var(--transition-fast);
+}
+.log-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg);
+}
+.log-header {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+.log-title {
+  font-weight: 600; font-size: 0.9375rem; color: var(--text);
+  flex: 1; line-height: 1.4;
+}
+.log-meta {
+  display: flex; gap: var(--space-3); flex-wrap: wrap;
+  align-items: center; font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.agent-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 10px; border-radius: var(--radius-full);
+  font-size: 0.6875rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.agent-tag.eagle { background: rgba(96,165,250,.15); color: #60a5fa; }
+.agent-tag.squirrel { background: rgba(251,191,36,.15); color: #fbbf24; }
+.agent-tag.bee { background: rgba(251,146,60,.15); color: #fb923c; }
+.agent-tag.ant { background: rgba(248,113,113,.15); color: #f87171; }
+.agent-tag.main { background: rgba(168,85,247,.15); color: #a855f7; }
+.log-desc {
+  color: var(--text-secondary); font-size: 0.8125rem;
+  line-height: 1.5; margin-top: var(--space-2);
+}
+.log-result {
+  margin-top: var(--space-3); padding: var(--space-3) var(--space-4);
+  background: var(--bg-elevated); border-radius: var(--radius);
+  font-size: 0.8125rem; color: var(--text-secondary);
+  border-left: 3px solid var(--success);
+  max-height: 120px; overflow-y: auto;
+}
+.log-result.error-result { border-left-color: var(--danger); }
+.log-time {
+  font-size: 0.6875rem; color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.log-duration {
+  font-size: 0.6875rem; color: var(--text-muted);
+  padding: 2px 8px; background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+}
+
+/* Stats bar */
+.stats-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-4); margin-bottom: var(--space-6);
+}
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5);
+  text-align: center;
+}
+.stat-num {
+  font-size: 1.75rem; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--success) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+/* Search */
+.search-box {
+  position: relative; margin-bottom: var(--space-5);
+}
+.search-box input {
+  padding-left: 40px; width: 100%;
+}
+.search-box::before {
+  content: "🔍"; position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%); font-size: 14px;
+}
+
+/* Load more */
+.load-more {
+  text-align: center; padding: var(--space-6) 0;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .timeline { padding-left: 24px; }
+  .log-dot { left: -20px; width: 10px; height: 10px; }
+  .log-header { flex-direction: column; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;">
+  <a href="requirement.html" style="color:#94a3b8;text-decoration:none;">需求追踪</a>
+  <a href="index.html" style="color:#94a3b8;text-decoration:none;">素材审核</a>
+  <a href="image-select.html" style="color:#94a3b8;text-decoration:none;">生图审核</a>
+  <a href="draft-review.html" style="color:#94a3b8;text-decoration:none;">草稿审核</a>
+  <a href="dashboard.html" style="color:#94a3b8;text-decoration:none;">数据看板</a>
+  <a href="tasks.html" style="color:#94a3b8;text-decoration:none;">任务看板</a>
+  <a href="command-log.html" style="color:#94a3b8;text-decoration:none;">指令日志</a>
+  <a href="user-manage.html" style="color:#94a3b8;text-decoration:none;">用户管理</a>
+</nav>
+<script>
+(function(){
+  var u = localStorage.getItem('mcn_current_user');
+  if(u) document.getElementById('mcn-nav').style.display='flex';
+  // highlight current page
+  var links = document.querySelectorAll('#mcn-nav a');
+  var path = location.pathname.split('/').pop() || 'index.html';
+  links.forEach(function(a){
+    if(a.getAttribute('href') === path){
+      a.style.color='#6366f1';
+      a.style.fontWeight='600';
+    }
+    a.addEventListener('mouseover',function(){this.style.color='#e2e8f0';});
+    a.addEventListener('mouseout',function(){
+      if(this.getAttribute('href')===path){this.style.color='#6366f1';}
+      else{this.style.color='#94a3b8';}
+    });
+  });
+})();
+</script>
+
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-content">
+      <h1>📋 指令日志</h1>
+      <div class="subtitle">皮皮下达的所有指令 · 任务执行全记录</div>
+    </div>
+    <div class="status ok" id="connStatus">
+      <span>在线</span>
+    </div>
+  </div>
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card">
+      <div class="stat-num" id="statTotal">-</div>
+      <div class="stat-label">总指令数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statDone">-</div>
+      <div class="stat-label">已完成</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statRunning">-</div>
+      <div class="stat-label">执行中</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statFailed">-</div>
+      <div class="stat-label">失败</div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="搜索指令内容...">
+  </div>
+
+  <!-- Filters -->
+  <div class="log-filters" id="filterBar">
+    <button class="chip active" data-filter="all">全部</button>
+    <button class="chip" data-agent="main" data-filter="main">🦊 爪爪</button>
+    <button class="chip" data-agent="eagle" data-filter="eagle">🦅 鹰眼</button>
+    <button class="chip" data-agent="squirrel" data-filter="squirrel">🐿️ 松鼠</button>
+    <button class="chip" data-agent="bee" data-filter="bee">🐝 蜜蜂</button>
+    <button class="chip" data-agent="ant" data-filter="ant">🐜 蚂蚁</button>
+    <span style="border-left:1px solid var(--border);margin:0 4px"></span>
+    <button class="chip" data-filter="done">✅ 完成</button>
+    <button class="chip" data-filter="running">⏳ 执行中</button>
+    <button class="chip" data-filter="failed">❌ 失败</button>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline" id="timeline">
+    <div class="empty-state">
+      <div class="empty-state-icon">⏳</div>
+      <div>加载中...</div>
+    </div>
+  </div>
+
+  <!-- Load more -->
+  <div class="load-more" id="loadMore" style="display:none">
+    <button class="ghost" id="loadMoreBtn">加载更多</button>
+  </div>
+</div>
+<script>
+// agent_runs 表用 mcn-xxx 格式，映射到显示名
+const AGENT_MAP = {
+  zhuazhua: { emoji: '🦊', name: '爪爪', color: '#a855f7', cls: 'main' },
+  'mcn-eagle': { emoji: '🦅', name: '鹰眼', color: '#60a5fa', cls: 'eagle' },
+  'mcn-squirrel': { emoji: '🐿️', name: '松鼠', color: '#fbbf24', cls: 'squirrel' },
+  'mcn-bee': { emoji: '🐝', name: '蜜蜂', color: '#fb923c', cls: 'bee' },
+  'mcn-ant': { emoji: '🐜', name: '蚂蚁', color: '#f87171', cls: 'ant' },
+  // 兼容旧短名
+  main: { emoji: '🦊', name: '爪爪', color: '#a855f7', cls: 'main' },
+  eagle: { emoji: '🦅', name: '鹰眼', color: '#60a5fa', cls: 'eagle' },
+  squirrel: { emoji: '🐿️', name: '松鼠', color: '#fbbf24', cls: 'squirrel' },
+  bee: { emoji: '🐝', name: '蜜蜂', color: '#fb923c', cls: 'bee' },
+  ant: { emoji: '🐜', name: '蚂蚁', color: '#f87171', cls: 'ant' }
+};
+const STATUS_MAP = {
+  returned: { label: '完成', cls: 'done' },
+  running: { label: '执行中', cls: 'running' },
+  failed: { label: '失败', cls: 'failed' },
+  spawned: { label: '已派发', cls: 'running' },
+  timeout: { label: '超时', cls: 'failed' }
+};
+// 从 child_agent_id 提取过滤用的短名
+function agentShortName(id) {
+  if (!id) return '';
+  if (id.startsWith('mcn-')) return id.replace('mcn-', '');
+  if (id === 'zhuazhua') return 'main';
+  return id;
+}
+
+let sb, allTasks = [], currentFilter = 'all', searchQuery = '', page = 0;
+const PAGE_SIZE = 30;
+
+async function init() {
+  const d = window.SUPABASE_DEFAULTS || {};
+  const url = d.url;
+  const key = d.anonKey;
+  if (!url || !key) {
+    document.getElementById('connStatus').className = 'status error';
+    document.getElementById('connStatus').innerHTML = '<span>未配置</span>';
+    return;
+  }
+  sb = supabase.createClient(url, key);
+  await loadTasks();
+  setupFilters();
+  setupSearch();
+  // agent_runs 表已停用 (2026-03-30)，不再订阅 realtime
+}
+
+async function loadTasks() {
+  // agent_runs 已停用，显示空状态
+  document.getElementById('connStatus').className = 'status';
+  document.getElementById('connStatus').innerHTML = '<span>agent_runs 已停用 (2026-03-30)</span>';
+  allTasks = [];
+  updateStats();
+  renderTimeline();
+}
+function updateStats() {
+  const total = allTasks.length;
+  const done = allTasks.filter(t => t.status === 'returned').length;
+  const running = allTasks.filter(t => ['running','spawned'].includes(t.status)).length;
+  const failed = allTasks.filter(t => ['failed','timeout'].includes(t.status)).length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statRunning').textContent = running;
+  document.getElementById('statFailed').textContent = failed;
+}
+
+function getFiltered() {
+  let list = allTasks;
+  if (currentFilter !== 'all') {
+    if (['done','running','failed'].includes(currentFilter)) {
+      list = list.filter(t => {
+        if (currentFilter === 'done') return t.status === 'returned';
+        if (currentFilter === 'running') return ['running','spawned'].includes(t.status);
+        if (currentFilter === 'failed') return ['failed','timeout'].includes(t.status);
+        return t.status === currentFilter;
+      });
+    } else {
+      // Filter by agent short name
+      list = list.filter(t => agentShortName(t.child_agent_id) === currentFilter);
+    }
+  }
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    list = list.filter(t =>
+      (t.task_id||'').toLowerCase().includes(q) ||
+      (t.result_summary||'').toLowerCase().includes(q) ||
+      (t.error_reason||'').toLowerCase().includes(q) ||
+      (t.child_agent_id||'').toLowerCase().includes(q) ||
+      (t.parent_agent_id||'').toLowerCase().includes(q)
+    );
+  }
+  return list;
+}
+
+function formatTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 60000) return '刚刚';
+  if (diff < 3600000) return Math.floor(diff/60000) + '分钟前';
+  if (diff < 86400000) return Math.floor(diff/3600000) + '小时前';
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function formatDuration(start, end) {
+  if (!start || !end) return '';
+  const ms = new Date(end) - new Date(start);
+  if (ms < 0) return '';
+  if (ms < 60000) return Math.round(ms/1000) + 's';
+  if (ms < 3600000) return Math.floor(ms/60000) + 'm ' + Math.round((ms%60000)/1000) + 's';
+  return Math.floor(ms/3600000) + 'h ' + Math.floor((ms%3600000)/60000) + 'm';
+}
+function renderTimeline() {
+  const filtered = getFiltered();
+  const shown = filtered.slice(0, (page + 1) * PAGE_SIZE);
+  const tl = document.getElementById('timeline');
+  if (shown.length === 0) {
+    tl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div>暂无指令记录</div></div>';
+    document.getElementById('loadMore').style.display = 'none';
+    return;
+  }
+  tl.innerHTML = shown.map(t => {
+    const agent = AGENT_MAP[t.child_agent_id] || { emoji:'❓', name: t.child_agent_id||'未知', color:'#64748b', cls:'' };
+    const st = STATUS_MAP[t.status] || { label: t.status, cls: 'pending' };
+    const dur = formatDuration(t.started_at || t.created_at, t.finished_at);
+    let resultHtml = '';
+    if (t.result_summary) {
+      resultHtml = `<div class="log-result">${escHtml(t.result_summary)}</div>`;
+    }
+    if (t.error_reason) {
+      resultHtml = `<div class="log-result error-result">${escHtml(t.error_reason)}</div>`;
+    }
+    const triggerTag = t.trigger_type ? `<span style="opacity:.6">触发: ${escHtml(t.trigger_type)}</span>` : '';
+    const parentTag = t.parent_agent_id ? `<span style="opacity:.6">调度: ${escHtml(t.parent_agent_id)}</span>` : '';
+    return `
+      <div class="log-entry">
+        <div class="log-dot ${st.cls}"></div>
+        <div class="log-card">
+          <div class="log-header">
+            <div class="log-title">${escHtml(t.task_id || '(无标题)')}</div>
+            <div class="log-meta">
+              <span class="agent-tag ${agent.cls||''}">${agent.emoji} ${agent.name}</span>
+              <span class="badge ${st.cls === 'done' ? 'success' : st.cls === 'failed' ? 'danger' : 'warning'}">${st.label}</span>
+              ${dur ? `<span class="log-duration">⏱ ${dur}</span>` : ''}
+            </div>
+          </div>
+          ${resultHtml}
+          <div class="log-meta" style="margin-top:var(--space-3)">
+            <span class="log-time">📅 ${formatTime(t.created_at)}</span>
+            ${triggerTag}
+            ${parentTag}
+            <span class="log-time" style="opacity:.4">${(t.id||'').slice(0,8)}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const lm = document.getElementById('loadMore');
+  lm.style.display = shown.length < filtered.length ? 'block' : 'none';
+}
+
+function escHtml(s) {
+  const el = document.createElement('span');
+  el.textContent = s;
+  return el.innerHTML;
+}
+function setupFilters() {
+  document.getElementById('filterBar').addEventListener('click', e => {
+    const btn = e.target.closest('.chip');
+    if (!btn) return;
+    document.querySelectorAll('#filterBar .chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    page = 0;
+    renderTimeline();
+  });
+}
+
+function setupSearch() {
+  let timer;
+  document.getElementById('searchInput').addEventListener('input', e => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      searchQuery = e.target.value.trim();
+      page = 0;
+      renderTimeline();
+    }, 250);
+  });
+}
+
+document.getElementById('loadMoreBtn').addEventListener('click', () => {
+  page++;
+  renderTimeline();
+});
+
+init();
+</script>
+</body>
+</html>

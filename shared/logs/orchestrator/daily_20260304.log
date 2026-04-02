@@ -1,0 +1,63 @@
+[Wed Mar  4 10:05:12 CST 2026] 每日素材采集工作流开始
+[Wed Mar  4 10:05:12 CST 2026] 步骤1: 采集颜值素材
+🎨 XHS Face Collector
+====================
+关键词: 氛围感,氛围感拍照,氛围感摄影,甜妹,纯欲风,韩系美女,怼脸拍,自拍,头像感,清冷感,氧气感
+输出: /Users/lipengyu/.openclaw/workspace/skills/xhs-face-collector/../../shared/content-assets/face/pending
+
+/Users/lipengyu/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+2026-03-04 10:05:18 MediaCrawler INFO (core.py:82) - [XiaoHongShuCrawler] Launching browser using standard mode
+2026-03-04 10:05:18 MediaCrawler INFO (core.py:394) - [XiaoHongShuCrawler.launch_browser] Begin create browser context ...
+2026-03-04 10:05:23 MediaCrawler INFO (core.py:358) - [XiaoHongShuCrawler.create_xhs_client] Begin create Xiaohongshu API client ...
+2026-03-04 10:05:23 MediaCrawler INFO (client.py:234) - [XiaoHongShuClient.pong] Begin to check login state...
+2026-03-04 10:05:24 MediaCrawler INFO (client.py:245) - [XiaoHongShuClient.pong] Login state result: False
+2026-03-04 10:05:24 MediaCrawler INFO (login.py:89) - [XiaoHongShuLogin.begin] Begin login xiaohongshu ...
+2026-03-04 10:05:24 MediaCrawler INFO (login.py:215) - [XiaoHongShuLogin.login_by_cookies] Begin login xiaohongshu by cookie ...
+2026-03-04 10:05:24 MediaCrawler INFO (core.py:127) - [XiaoHongShuCrawler.search] Begin search Xiaohongshu keywords
+2026-03-04 10:05:24 MediaCrawler INFO (core.py:134) - [XiaoHongShuCrawler.search] Current search keyword: 氛围感
+2026-03-04 10:05:24 MediaCrawler INFO (core.py:144) - [XiaoHongShuCrawler.search] search Xiaohongshu keyword: 氛围感, page: 1
+Traceback (most recent call last):
+  File "/Users/lipengyu/Library/Python/3.9/lib/python/site-packages/tenacity/_asyncio.py", line 50, in __call__
+    result = await fn(*args, **kwargs)
+  File "/Users/lipengyu/.openclaw/workspace/MediaCrawler/media_platform/xhs/client.py", line 152, in request
+    raise DataFetchError(err_msg)
+media_platform.xhs.exception.DataFetchError: 您当前登录的账号没有权限访问
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/lipengyu/.openclaw/workspace/MediaCrawler/main.py", line 157, in <module>
+    run(main, async_cleanup, cleanup_timeout_seconds=15.0, on_first_interrupt=_force_stop)
+  File "/Users/lipengyu/.openclaw/workspace/MediaCrawler/tools/app_runner.py", line 109, in run
+    asyncio.run(_runner())
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/base_events.py", line 642, in run_until_complete
+    return future.result()
+  File "/Users/lipengyu/.openclaw/workspace/MediaCrawler/tools/app_runner.py", line 96, in _runner
+    await app_main()
+  File "/Users/lipengyu/.openclaw/workspace/MediaCrawler/main.py", line 110, in main
+    await crawler.start()
+  File "/Users/lipengyu/.openclaw/workspace/MediaCrawler/media_platform/xhs/core.py", line 113, in start
+    await self.search()
+  File "/Users/lipengyu/.openclaw/workspace/MediaCrawler/media_platform/xhs/core.py", line 147, in search
+    notes_res = await self.xhs_client.get_note_by_keyword(
+  File "/Users/lipengyu/.openclaw/workspace/MediaCrawler/media_platform/xhs/client.py", line 291, in get_note_by_keyword
+    return await self.post(uri, data)
+  File "/Users/lipengyu/.openclaw/workspace/MediaCrawler/media_platform/xhs/client.py", line 183, in post
+    return await self.request(
+  File "/Users/lipengyu/Library/Python/3.9/lib/python/site-packages/tenacity/_asyncio.py", line 88, in async_wrapped
+    return await fn(*args, **kwargs)
+  File "/Users/lipengyu/Library/Python/3.9/lib/python/site-packages/tenacity/_asyncio.py", line 47, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/Users/lipengyu/Library/Python/3.9/lib/python/site-packages/tenacity/__init__.py", line 326, in iter
+    raise retry_exc from fut.exception()
+tenacity.RetryError: RetryError[<Future at 0x12b44f3d0 state=finished raised DataFetchError>]
+[Wed Mar  4 10:05:27 CST 2026] 采集完成: /Users/lipengyu/.openclaw/workspace/shared/content-assets/face/pending/2026-03-04/
+[Wed Mar  4 10:05:27 CST 2026] 步骤2: YOLO人脸检测过滤
+[Wed Mar  4 10:05:27 CST 2026] YOLO过滤完成 (待实现)
+[Wed Mar  4 10:05:27 CST 2026] 步骤3: 大模型质量评分
+[Wed Mar  4 10:05:27 CST 2026] 质量评估完成 (待实现)
+[Wed Mar  4 10:05:27 CST 2026] 步骤4: 保存到审核队列
+[Wed Mar  4 10:05:27 CST 2026] 工作流完成！

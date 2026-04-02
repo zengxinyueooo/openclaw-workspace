@@ -1,0 +1,57 @@
+{
+  "collection_date": "2026-03-03",
+  "category": "颜值",
+  "topics": [
+    {
+      "id": "topic_001",
+      "title": "方圆脸天菜妆容｜3步视觉瘦脸大法",
+      "title_tags": ["方圆脸", "妆容", "瘦脸"],
+      "content_pattern": "Before/After对比 + 分步教程",
+      "engagement_indicators": {
+        "estimated_likes": "5000-10000",
+        "estimated_saves": "2000-5000",
+        "estimated_comments": "200-500"
+      },
+      "why_viral": "痛点精准(方圆脸困扰)+ 解决方案简单可执行 + 视觉冲击强",
+      "target_audience": "18-30岁女性，脸型困扰人群",
+      "content_angle": "素人改造 / 新手友好",
+      "recommended_format": "图文/视频教程",
+      "keywords": ["方圆脸妆容", "修容教程", "瘦脸妆容"],
+      "reference_notes": "低粉账号爆款特征：真实感+实操性强"
+    },
+    {
+      "id": "topic_002",
+      "title": "早八人5分钟伪素颜妆｜被同事追着问链接",
+      "title_tags": ["早八妆", "伪素颜", "快速出门"],
+      "content_pattern": "时间挑战 + 产品清单 + 效果展示",
+      "engagement_indicators": {
+        "estimated_likes": "3000-8000",
+        "estimated_saves": "3000-6000",
+        "estimated_comments": "150-400"
+      },
+      "why_viral": "解决上班族痛点(时间紧张)+ 种草属性强 + 互动性高",
+      "target_audience": "22-35岁职场女性",
+      "content_angle": "实用主义 / 平价好物",
+      "recommended_format": "视频教程 + 产品清单",
+      "keywords": ["早八妆容", "伪素颜", "通勤妆", "快速化妆"],
+      "reference_notes": "强调被问链接增加真实感和种草欲"
+    },
+    {
+      "id": "topic_003",
+      "title": "普通人尝试张元英妆容｜韩女水光肌我悟了",
+      "title_tags": ["张元英", "韩系妆容", "水光肌"],
+      "content_pattern": "明星仿妆 + 普通人对比 + 技巧拆解",
+      "engagement_indicators": {
+        "estimated_likes": "8000-20000",
+        "estimated_saves": "4000-10000",
+        "estimated_comments": "500-1500"
+      },
+      "why_viral": "蹭明星热度 + 反差感(普通人vs明星)+ 情绪价值",
+      "target_audience": "16-28岁追韩流女性",
+      "content_angle": "仿妆挑战 / 素人逆袭",
+      "recommended_format": "视频教程 + 对比图",
+      "keywords": ["张元英仿妆", "韩系水光肌", "韩女妆容", "明星仿妆"],
+      "reference_notes": "低粉账号流量密码：蹭热点明星+真实感"
+    }
+  ]
+}

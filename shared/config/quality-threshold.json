@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "thresholds": {
+    "yolo_face_confidence": {
+      "min": 0.5,
+      "target": 0.8,
+      "human_review_below": 0.6
+    },
+    "image_resolution": {
+      "min_width": 800,
+      "min_height": 800
+    },
+    "engagement_score": {
+      "min_likes": 1000,
+      "target_likes": 10000
+    }
+  },
+  "triggers": {
+    "consecutive_failures": 3,
+    "quality_score_below": 0.6,
+    "timeout_seconds": 1800
+  }
+}

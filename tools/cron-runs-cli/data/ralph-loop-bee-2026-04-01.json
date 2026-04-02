@@ -1,0 +1,8 @@
+{
+  "agent_id": "mcn-bee",
+  "trigger": "ralph-loop-bee",
+  "status": "error",
+  "summary": "Supabase API key 无效，连接失败，无法查询 pending 子需求",
+  "finished_at": "2026-04-01T05:00:00+08:00",
+  "error": "APIError: Invalid API key - Supabase anon key 已失效，需在 Supabase Dashboard → Settings → API 重新获取"
+}

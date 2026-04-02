@@ -1,0 +1,240 @@
+#+TITLE: 小红书矩阵自动化系统架构
+#+AUTHOR: 爪爪
+#+DATE: 2026-03-03
+
+* 系统架构总览
+
+** 角色层级
+
+#+BEGIN_SRC text
+皮皮（用户）
+    │
+    ├───daxiang channel───▶ 爪爪 🦊 (主 Session)
+    │                           │
+    │                           ├─── 开发/配置/调试
+    │                           └─── 状态查询/人工介入
+    │
+    └─── 接收汇报 ◀─── Cron 定时任务
+                              │
+                              └─── 创建临时 Topic Researcher
+                                        │
+                                        ├─── 读取 MEMORY.md (恢复状态)
+                                        ├─── 抓取小红书选题
+                                        ├─── 写入 shared/data/topics/
+                                        └─── 更新 MEMORY.md (保存进度)
+#+END_SRC
+
+** 核心组件
+
+*** 主控层 - 爪爪 (主 Session)
+- 职责: 用户交互入口、开发调试、架构管理
+- 特点: 用户直接对话，无时在线
+- 功能: 接收指令、配置 Cron、查询状态、人工介入
+
+*** 调度层 - 爪爪总管 + Cron 执行器
+- 架构决策: 简化方案 (ADR-002)
+- 原则: 爪爪是唯一入口和总管，Cron 是执行器
+- 实现:
+  - 爪爪: 交互入口、状态查询、人工决策、配置管理
+  - Cron: 定时触发 Worker (技术必须，但受爪爪监管)
+  - Workers: 任务执行
+- 说明: Cron 直接触发 Worker 是技术限制（Session 被动唤醒），但爪爪是名义上和实际决策上的总管
+
+*** 执行层 (7个 Worker Agent)
+
+**** 1. Topic Researcher - 选题研究员
+- 职责: 监控小红书，发现低粉爆款选题
+- 触发: Cron 每4小时
+- 生命周期: 临时 Session
+- 记忆: 文件级 (MEMORY.md)
+- 输出: shared/data/topics/
+
+**** 2. Content Collector - 素材收集员
+- 职责: 根据选题收集图片、视频、文案参考
+- 触发: 按需（选题确认后）
+- 生命周期: 临时 Session
+- 记忆: 文件级 (MEMORY.md)
+- 输出: shared/content-assets/pending/日期/批次/
+- 审核: 素材进入 pending/，人工审核后移动到 approved/by-topic/选题名/
+- 重要: Content Writer 只能使用 approved/ 中的素材
+
+**** 3. Content Writer - 内容写手
+- 职责: 创作小红书笔记（标题、正文、话题标签）
+- 触发: 按需（素材准备好后）
+- 生命周期: 临时 Session
+- 记忆: 文件级 (MEMORY.md)
+- 输出: shared/data/drafts/
+
+**** 4. Publisher - 发布执行员
+- 职责: 操作已连接手机执行发布
+- 触发: 皮皮确认后
+- 生命周期: 临时 Session
+- 安全: 必须人工授权
+- 输出: shared/data/published/
+
+**** 5. Engagement Manager - 互动管理员
+- 职责: 养号（定时浏览互动）+ 回复评论 + 监控私信
+- 触发: Cron 定时（养号）+ 事件触发（评论回复）
+- 生命周期: 临时 Session
+- 记忆: 文件级 (MEMORY.md)
+
+**** 6. Data Analyst - 数据分析师
+- 职责: 收集内容数据、分析爆款特征、输出报表
+- 触发: Cron 定时（周报/月报）+ 按需
+- 生命周期: 临时 Session
+- 记忆: 文件级 (MEMORY.md)
+
+*** 基础设施
+
+**** Cron 调度器
+- collect-inspiration: 每4小时抓取选题
+
+**** 共享存储
+
+***** 人设库 (shared/personas/)
+公共人设资产，所有 Skill 共享。
+
+```
+shared/personas/
+├── _index.json                     # 人设索引
+├── _sync-scripts/
+│   └── persona-sync.py             # 定时同步脚本
+│
+├── 小Lin晓晓/
+│   ├── profile.json                # 人设档案（参考图、业务标签、账号信息）
+│   └── content-library/
+│       └── face-images/            # 颜值图片
+│           ├── pending/            # 🆕 待审核（生成后先放这里）
+│           └── approved/           # 🆕 已审核（人工确认后复制到这里）
+│
+└── ...其他人设
+```
+
+***** 素材库 (shared/content-assets/)
+公共素材收集库，按**内容类型**分类存放（颜值/穿搭/环境）。
+
+```
+shared/content-assets/
+├── _index.json                     # 素材索引
+├── README.md                       # 使用说明
+│
+├── pending/                        # 🆕 待审核素材（按批次+类型存放）
+│   └── 2025-03-03/
+│       └── 批次_001_韩系穿搭分享/
+│           ├── face/               # 颜值参考图
+│           ├── outfit/             # 衣服参考图
+│           ├── scene/              # 环境参考图
+│           └── metadata.json       # 素材元数据
+│
+└── approved/                       # 🆕 已审核素材（按类型分类）
+    └── by-type/                    # 按内容类型分类
+        ├── face/                   # 颜值参考图
+        ├── outfit/                 # 衣服参考图
+        ├── scene/                  # 环境参考图
+        ├── nail/                   # 🆕 纯美甲参考图
+        └── nail-face/              # 🆕 颜值美甲参考图
+```
+
+****** 内容类型定义
+
+| 类型 | 目录 | 说明 | 使用场景 |
+|------|------|------|---------|
+| face | 颜值参考图 | 人物面部、妆容、发型 | 颜值/美妆内容 |
+| outfit | 衣服参考图 | 服装搭配、风格参考 | 穿搭分享 |
+| scene | 环境参考图 | 拍摄场景、背景环境 | 探店/生活方式 |
+| nail | 纯美甲参考图 | 仅美甲特写，无人像 | 美甲教程、款式推荐 |
+| nail-face | 颜值美甲参考图 | 带人像的美甲展示 | 美甲+颜值综合内容 |
+
+***** 配置与数据
+- shared/config/: 配置 (原子能力、流程、人工节点)
+- shared/data/: 数据 (topics/, drafts/, approved/, published/)
+- agents/[name]/MEMORY.md: 各 Agent 持久化记忆
+
+***** 审核机制
+
+| 资产类型 | 待审核位置 | 已审核位置 | 审核方式 |
+|---------|-----------|-----------|---------|
+| 颜值图片 | personas/人设/face-images/pending/ | personas/人设/face-images/approved/ | 人工复制 |
+| 素材收集 | content-assets/pending/批次/类型/ | content-assets/approved/by-type/类型/ | 人工移动 |
+| 内容草稿 | data/drafts/ | data/approved/ | 人工确认 |
+
+* 工作流程
+
+** V1 流程 (当前 - 人工填充为主)
+
+#+BEGIN_SRC text
+[皮皮指令] → [爪爪拆解/配置]
+                ↓
+    ┌─────────────────────────────────────────┐
+    │                                         │
+    ▼                                         ▼
+[Cron定时]                                [人工生产]
+    │                                         │
+    ▼                                         │
+[Topic Researcher]                          │
+(抓取选题)                                  │
+    │                                         │
+    ▼                                         │
+[存入 topics/]                              │
+    │                                         │
+    ▼                                         │
+[皮皮确认选题方向] ←──────────────────────────┘
+    │
+    ▼
+[人工介入：内容生产]
+    ├── 素材准备 (Content Collector ⏳)
+    ├── 文案撰写 (Content Writer ⏳)
+    └── 标题/标签优化
+    │
+    ▼
+[存入 drafts/]
+    │
+    ▼
+[皮皮确认内容]
+    │
+    ▼
+[Publisher] (需授权)
+    │
+    ▼
+[存入 published/]
+    │
+    ▼
+[Engagement Manager ⏳] (养号+互动)
+    │
+    ▼
+[Data Analyst ⏳] (数据收集+分析)
+#+END_SRC
+
+** 完整 V2 流程 (目标 - 全自动化)
+
+#+BEGIN_SRC text
+[Cron定时] → [Topic Researcher] → [Content Collector]
+                                           │
+                                           ▼
+[Content Writer] → [皮皮确认]
+                       │
+                       ▼
+[Publisher] → [Engagement Manager] → [Data Analyst]
+                                           │
+                                           ▼
+                                    [反馈优化]
+#+END_SRC
+
+** 人工介入节点
+
+1. 选题方向确认 (topics/ 生成后)
+2. 内容草稿确认 (drafts/ 提交后)
+3. 发布执行授权 (发布前)
+4. 异常处理 (任何 agent 失败时)
+
+* 当前限制
+
+- daxiang 频道不支持 thread 绑定
+- 无法实现真正的长期存活 Agent
+- 采用"文件记忆"方案实现伪长期记忆
+
+* 下一步建设
+
+- [ ] 实现小红书抓取 skill
+- [ ] 建设文案生成能力
+- [ ] 决策: 是否迁移到支持 thread 的频道来实现真正的 Orchestrator

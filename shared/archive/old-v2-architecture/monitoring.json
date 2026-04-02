@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "heartbeat": {
+    "interval_seconds": 60,
+    "timeout_seconds": 300,
+    "stuck_threshold": 1800
+  },
+  "alerts": {
+    "channels": ["orchestrator", "log"],
+    "rules": [
+      {
+        "name": "worker_stuck",
+        "condition": "last_heartbeat > 30min",
+        "severity": "warning",
+        "action": "notify_orchestrator"
+      },
+      {
+        "name": "api_rate_limit",
+        "condition": "rate_limit_approaching > 80%",
+        "severity": "warning",
+        "action": "throttle_workers"
+      },
+      {
+        "name": "consecutive_failures",
+        "condition": "failures >= 3",
+        "severity": "error",
+        "action": "pause_worker_and_notify"
+      }
+    ]
+  },
+  "metrics": {
+    "collect": [
+      "task_success_rate",
+      "avg_processing_time",
+      "api_quota_usage",
+      "material_count",
+      "worker_status"
+    ],
+    "retention_days": 7
+  }
+}

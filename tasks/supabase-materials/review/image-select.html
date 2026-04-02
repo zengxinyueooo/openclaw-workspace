@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>生成图审核</title>
+  <link rel="stylesheet" href="shared.css" />
+  <link rel="stylesheet" href="image-select.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    Auth.requireLogin();
+  </script>
+</head>
+<body>
+<nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;">
+  <a href="requirement.html" style="color:#94a3b8;text-decoration:none;">需求追踪</a>
+  <a href="index.html" style="color:#94a3b8;text-decoration:none;">素材审核</a>
+  <a href="image-select.html" style="color:#94a3b8;text-decoration:none;">生图审核</a>
+  <a href="draft-review.html" style="color:#94a3b8;text-decoration:none;">草稿审核</a>
+  <a href="dashboard.html" style="color:#94a3b8;text-decoration:none;">数据看板</a>
+  <a href="tasks.html" style="color:#94a3b8;text-decoration:none;">任务看板</a>
+  <a href="command-log.html" style="color:#94a3b8;text-decoration:none;">指令日志</a>
+  <a href="user-manage.html" style="color:#94a3b8;text-decoration:none;">用户管理</a>
+</nav>
+<script>
+(function(){
+  var u = localStorage.getItem('mcn_current_user');
+  if(u) document.getElementById('mcn-nav').style.display='flex';
+  // highlight current page
+  var links = document.querySelectorAll('#mcn-nav a');
+  var path = location.pathname.split('/').pop() || 'index.html';
+  links.forEach(function(a){
+    if(a.getAttribute('href') === path){
+      a.style.color='#6366f1';
+      a.style.fontWeight='600';
+    }
+    a.addEventListener('mouseover',function(){this.style.color='#e2e8f0';});
+    a.addEventListener('mouseout',function(){
+      if(this.getAttribute('href')===path){this.style.color='#6366f1';}
+      else{this.style.color='#94a3b8';}
+    });
+  });
+})();
+</script>
+
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1 id="page-title">生成图审核</h1>
+        <p class="subtitle" id="page-subtitle">选择通过的人脸图</p>
+      </div>
+      <div class="status" id="status">未连接</div>
+    </header>
+
+    <section class="config" id="config">
+      <label>
+        Supabase 地址
+        <input id="supabase-url" type="text" placeholder="https://xxxx.supabase.co" />
+      </label>
+      <label>
+        匿名密钥
+        <input id="supabase-key" type="password" placeholder="eyJhbGci..." />
+      </label>
+      <button id="connect">连接</button>
+    </section>
+
+    <section id="task-list" class="task-list" style="display:none;">
+      <div class="section-head">
+        <div class="head-left">
+          <h2>任务列表</h2>
+          <div id="tab-container" class="tab-container"></div>
+        </div>
+        <button id="refresh-tasks" class="ghost">刷新</button>
+      </div>
+      <div id="task-items" class="task-items"></div>
+    </section>
+
+    <section id="gallery" class="gallery" style="display:none;">
+      <div class="section-head">
+        <h2 id="gallery-title">图片画廊</h2>
+        <div class="head-actions">
+          <button id="back-to-list" class="ghost">返回任务</button>
+        </div>
+      </div>
+      <div id="task-meta" class="task-meta"></div>
+      <div id="ref-images" class="ref-images" style="display:none;"></div>
+      <div id="image-grid" class="image-grid"></div>
+    </section>
+  </main>
+
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <div class="lightbox-inner">
+      <img id="lightbox-image" alt="预览" />
+      <button id="lightbox-close">关闭</button>
+    </div>
+  </div>
+
+  <div class="bottom-bar" id="bottom-bar" style="display:none;">
+    <div class="bottom-content">
+      <div class="selected-count">已选 <span id="selected-count">0</span> 张</div>
+      <button id="reject-all" class="danger">全部不合格</button>
+      <button id="confirm-selection" class="primary" disabled>确认选择</button>
+    </div>
+  </div>
+
+  <script src="image-select.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/supabase/:path*",
+      "destination": "https://db0x9oo2hn7xxw.database.sankuai.com/:path*"
+    }
+  ]
+}

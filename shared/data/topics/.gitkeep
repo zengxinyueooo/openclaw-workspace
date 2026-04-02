@@ -1,0 +1,7 @@
+# 占位文件
+
+这是 topics 目录，用于存放选题。
+
+每个选题是一个 JSON 文件：
+topics/
+  └── [topic-id].json
