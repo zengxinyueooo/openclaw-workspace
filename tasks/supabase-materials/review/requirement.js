@@ -325,7 +325,7 @@ function formatTime(time) {
   if (!time) return '';
   const date = new Date(time);
   return date.toLocaleString('zh-CN', {
-    timeZone: 'UTC',
+    timeZone: 'Asia/Shanghai',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
