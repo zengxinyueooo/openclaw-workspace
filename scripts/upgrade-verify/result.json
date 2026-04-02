@@ -1,0 +1,116 @@
+{
+  "generated_at": "2026-04-03 01:18:04",
+  "total": 26,
+  "passed": 22,
+  "failed": 3,
+  "skipped": 1,
+  "cases": [
+    {
+      "name": "test_env.py::TestEnvironment::test_01_gateway_version_upgraded",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_02_user_is_not_root",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_03_intranet_no_proxy[example.mt]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_03_intranet_no_proxy[example.lan]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_03_intranet_no_proxy[example.sankuai.cc]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_03_intranet_no_proxy[s.sankuai.com]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_03_intranet_no_proxy[example.51ping.com]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_03_intranet_no_proxy[example.neixin.cn]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_03_intranet_no_proxy[example.daxiang.com]",
+      "result": "skipped"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_04_extranet_uses_proxy[www.adobe.com]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_04_extranet_uses_proxy[www.tvb.com]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_04_extranet_uses_proxy[www.baidu.com]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_04_extranet_uses_proxy[www.51job.com]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_04_extranet_uses_proxy[www.zhihu.com]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_04_extranet_uses_proxy[s3.meituan.net]",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_05_moa_running",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_06_env_keys_complete",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_07_config_hash_unchanged",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_08_skills_complete",
+      "result": "failed",
+      "detail": "以下 skill 升级后丢失：['agent-browser', 'summarize']\nE       assert not {'agent-browser', 'summarize'}\n\ntest_env.py:139: AssertionError"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_09_ssh_files_intact",
+      "result": "passed"
+    },
+    {
+      "name": "test_env.py::TestEnvironment::test_10_workspace_md_unchanged",
+      "result": "passed"
+    },
+    {
+      "name": "test_smoke.py::TestSmoke::test_01_message_roundtrip",
+      "result": "failed",
+      "detail": "/root/.local/lib/python3.12/site-packages/websocket/_http.py:373: WebSocketProxyException"
+    },
+    {
+      "name": "test_smoke.py::TestSmoke::test_02_exec_tool",
+      "result": "passed"
+    },
+    {
+      "name": "test_smoke.py::TestSmoke::test_04_workspace_read_write",
+      "result": "passed"
+    },
+    {
+      "name": "test_smoke.py::TestSmoke::test_05_cron_mechanism",
+      "result": "passed"
+    },
+    {
+      "name": "test_smoke.py::TestSmoke::test_06_gateway_sessions_api",
+      "result": "failed",
+      "detail": "/usr/local/lib/python3.12/dist-packages/requests/adapters.py:677: ConnectionError"
+    }
+  ]
+}

@@ -8,7 +8,7 @@
 
 set -e
 
-source /Users/lipengyu/.openclaw/workspace/.env.supabase
+source /mnt/openclaw/.openclaw/workspace-mcn-bee/.env.supabase 2>/dev/null || source /mnt/openclaw/.openclaw/workspace-mcn-owl/.env.supabase 2>/dev/null
 
 TODAY=$(python3 -c "from datetime import datetime,timezone,timedelta; print(datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%dT00:00:00+08:00'))")
 
