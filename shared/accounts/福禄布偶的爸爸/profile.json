@@ -1,21 +1,19 @@
 {
-  "id": 11,
-  "local_id": "doudoudiaosep",
-  "phone": "15618350479",
+  "id": 9,
+  "local_id": "fulubuoubaba",
+  "phone": "15381403234",
   "platform": "xiaohongshu",
-  "nickname": "doudou调色盘🎨",
-  "device_id": "A3KUVB2106010248",
+  "nickname": "福禄布偶的爸爸",
+  "device_id": "A3KUVB2208001484",
   "status": "normal",
   "account_type": "分享号",
   "business_type": [
-    "美甲"
+    "宠物视频"
   ],
   "primary_categories": [],
   "secondary_categories": [],
   "cities": [],
-  "tags": [
-    "美甲"
-  ],
+  "tags": [],
   "persona_style": null,
   "persona_portraitRef": null
 }

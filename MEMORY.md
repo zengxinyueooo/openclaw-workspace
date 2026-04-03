@@ -50,9 +50,21 @@
 | 🦅 鹰眼 | 话题研究、评论搜索、巡检判定 | workspace-mcn-eagle | xhs-topic-researcher, xhs-comment-searcher |
 | 🐿️ 松鼠 | 素材采集、分类、入库 | workspace-mcn-squirrel | xhs-face-collector, xhs-nail-collector, xhs-scraper, collect-xhs-assets, collect-xhs-nail |
 | 🐝 蜜蜂 | 生图、上传、笔记生产 | workspace-mcn-bee | face-image-generator, image-upload, generating-xiaohongshu-notes |
-| 🐜 蚂蚁 | 发布运营、评论管理 | workspace-mcn-ant | opx-auth, opx-redbook-create, opx-task-management |
+| 🐜 蚂蚁 | 发布运营、评论管理、**养号** | workspace-mcn-ant | opx-auth, opx-redbook-create, opx-task-management, account-nurturing |
 | 🦉 猫头鹰 | GUI 数据回收、数据分析 | workspace-mcn-owl | gui-agent-cloud |
 | 🦊 爪爪 | 调度、派活、汇总 | workspace（主） | 无业务 skill，只调度（`coding-dispatch` 除外） |
+
+### 养号委派规则
+- cron `ant-account-nurturing`（每天 14:00 北京时间）→ **主 session（爪爪）** 收到「执行养号任务」
+- 爪爪 spawn 蚂蚁子 agent（workspace-mcn-ant）执行
+- 蚂蚁读 `skills/account-nurturing/SKILL.md`，`sessions_send(label="main")` 回报结果
+- token 来自 `.env.opx`，过期由皮皮处理，爪爪不直接操作养号接口
+
+### 养号委派规则
+- cron `ant-account-nurturing`（每天 14:00 北京时间）→ 主 session（爪爪）收到「执行养号任务」
+- 爪爪 spawn 蚂蚁子 agent（workspace-mcn-ant）执行
+- 蚂蚁读 `skills/account-nurturing/SKILL.md`，`sessions_send(label="main")` 回报结果
+- token 来自 `.env.opx`，过期由皮皮处理，爪爪不直接操作养号接口
 
 ## 学城文档命名规则
 

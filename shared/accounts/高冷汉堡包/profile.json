@@ -1,21 +1,19 @@
 {
-  "id": 11,
-  "local_id": "doudoudiaosep",
-  "phone": "15618350479",
+  "id": 31,
+  "local_id": "gaolenghanbaobao",
+  "phone": "13262912902",
   "platform": "xiaohongshu",
-  "nickname": "doudou调色盘🎨",
-  "device_id": "A3KUVB2106010248",
+  "nickname": "高冷汉堡包",
+  "device_id": "2488d422",
   "status": "normal",
   "account_type": "分享号",
   "business_type": [
-    "美甲"
+    "颜值"
   ],
   "primary_categories": [],
   "secondary_categories": [],
   "cities": [],
-  "tags": [
-    "美甲"
-  ],
+  "tags": [],
   "persona_style": null,
   "persona_portraitRef": null
 }

@@ -1,21 +1,19 @@
 {
-  "id": 11,
-  "local_id": "doudoudiaosep",
-  "phone": "15618350479",
+  "id": 29,
+  "local_id": "haimeishenji",
+  "phone": "18501614743",
   "platform": "xiaohongshu",
-  "nickname": "doudou调色盘🎨",
-  "device_id": "A3KUVB2106010248",
+  "nickname": "还没人设",
+  "device_id": "bd34f1b6",
   "status": "normal",
   "account_type": "分享号",
   "business_type": [
-    "美甲"
+    "颜值"
   ],
   "primary_categories": [],
   "secondary_categories": [],
   "cities": [],
-  "tags": [
-    "美甲"
-  ],
+  "tags": [],
   "persona_style": null,
   "persona_portraitRef": null
 }
