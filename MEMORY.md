@@ -54,6 +54,11 @@
 | 🦉 猫头鹰 | GUI 数据回收、数据分析 | workspace-mcn-owl | gui-agent-cloud |
 | 🦊 爪爪 | 调度、派活、汇总 | workspace（主） | 无业务 skill，只调度（`coding-dispatch` 除外） |
 
+## 学城文档命名规则
+
+- 标题格式：`MM-DD 干什么`，不写年份
+- 示例：`04-03 沙箱环境问题排查与修复`、`04-03 日记`
+
 ## 关键链接
 
 - 生图审核: https://review-gold-seven.vercel.app/image-select.html

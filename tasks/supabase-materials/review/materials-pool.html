@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>可用素材池</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; margin: 0; }
+
+    .page-header {
+      padding: 20px 24px 12px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      border-bottom: 1px solid #1e293b;
+    }
+    .page-header h1 { font-size: 18px; font-weight: 700; margin: 0; color: #f1f5f9; }
+    .stats-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto; }
+    .stat-chip {
+      background: #1e293b; border-radius: 8px; padding: 4px 12px;
+      font-size: 12px; color: #94a3b8;
+    }
+    .stat-chip span { color: #f1f5f9; font-weight: 600; margin-left: 4px; }
+
+    .toolbar {
+      padding: 12px 24px;
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      border-bottom: 1px solid #1e293b;
+    }
+    .toolbar select, .toolbar input {
+      background: #1e293b; border: 1px solid #334155;
+      color: #e2e8f0; border-radius: 6px; padding: 6px 10px; font-size: 13px;
+    }
+    .toolbar select:focus, .toolbar input:focus { outline: none; border-color: #6366f1; }
+    .filter-label { font-size: 12px; color: #64748b; }
+
+    .btn {
+      padding: 6px 14px; border-radius: 6px; font-size: 13px;
+      border: none; cursor: pointer; font-weight: 500; transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .btn-danger:disabled { background: #374151; color: #6b7280; cursor: not-allowed; opacity: 1; }
+    .btn-secondary { background: #334155; color: #e2e8f0; }
+    .btn-primary { background: #6366f1; color: #fff; }
+
+    /* 三列布局 */
+    .columns-wrap {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      padding: 0;
+    }
+    .column {
+      border-right: 1px solid #1e293b;
+      min-height: 80vh;
+    }
+    .column:last-child { border-right: none; }
+    .column-header {
+      padding: 12px 16px;
+      background: #111827;
+      border-bottom: 1px solid #1e293b;
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .column-header h2 { font-size: 14px; font-weight: 600; margin: 0; }
+    .col-count {
+      background: #1e293b; border-radius: 20px;
+      padding: 2px 8px; font-size: 11px; color: #94a3b8;
+    }
+    .col-face .column-header h2 { color: #f472b6; }
+    .col-nail .column-header h2 { color: #34d399; }
+    .col-nailface .column-header h2 { color: #60a5fa; }
+
+    .img-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .img-card {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #1e293b;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color .15s;
+    }
+    .img-card:hover { border-color: #475569; }
+    .img-card.selected { border-color: #6366f1; }
+    .img-card.used { opacity: .45; }
+
+    .img-card img {
+      width: 100%; aspect-ratio: 1;
+      object-fit: cover; display: block;
+    }
+    .img-card .overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.55);
+      display: none; align-items: center; justify-content: center;
+      gap: 6px;
+    }
+    .img-card:hover .overlay { display: flex; }
+    .img-card.used .overlay { display: flex; }
+
+    .overlay-btn {
+      background: rgba(255,255,255,.15); border: none;
+      color: #fff; border-radius: 50%; width: 32px; height: 32px;
+      cursor: pointer; font-size: 14px; display: flex;
+      align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .overlay-btn:hover { background: rgba(255,255,255,.3); }
+    .overlay-btn.del { background: rgba(239,68,68,.5); }
+    .overlay-btn.del:hover { background: rgba(239,68,68,.8); }
+
+    .img-card .used-badge {
+      position: absolute; top: 4px; left: 4px;
+      background: rgba(0,0,0,.7); border-radius: 4px;
+      padding: 2px 6px; font-size: 10px; color: #94a3b8;
+      max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .img-card .select-check {
+      position: absolute; top: 6px; right: 6px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: rgba(0,0,0,.6); border: 2px solid #475569;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: #fff;
+    }
+    .img-card.selected .select-check {
+      background: #6366f1; border-color: #6366f1;
+    }
+
+    .empty-col {
+      padding: 40px 16px; text-align: center;
+      color: #475569; font-size: 13px;
+    }
+
+    /* 批量操作栏 */
+    .bulk-bar {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 12px; padding: 10px 20px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      z-index: 100;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    .bulk-bar.visible { opacity: 1; pointer-events: all; }
+    .bulk-bar .count { font-size: 13px; color: #94a3b8; }
+    .bulk-bar .count span { color: #f1f5f9; font-weight: 600; }
+
+    /* 预览弹窗 */
+    .preview-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,.85);
+      z-index: 200; display: none;
+      align-items: center; justify-content: center;
+    }
+    .preview-modal.open { display: flex; }
+    .preview-inner {
+      max-width: 90vw; max-height: 90vh;
+      position: relative;
+    }
+    .preview-inner img { max-width: 85vw; max-height: 85vh; border-radius: 8px; display: block; }
+    .preview-info {
+      background: rgba(0,0,0,.7); border-radius: 6px;
+      padding: 8px 12px; margin-top: 8px;
+      font-size: 12px; color: #94a3b8;
+    }
+    .preview-close {
+      position: absolute; top: -12px; right: -12px;
+      background: #374151; border: none; color: #fff;
+      width: 28px; height: 28px; border-radius: 50%;
+      cursor: pointer; font-size: 16px; display: flex;
+      align-items: center; justify-content: center;
+    }
+
+    /* 确认弹窗 */
+    .confirm-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,.7);
+      z-index: 300; display: none;
+      align-items: center; justify-content: center;
+    }
+    .confirm-modal.open { display: flex; }
+    .confirm-box {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 12px; padding: 24px; max-width: 360px; width: 90%;
+    }
+    .confirm-box h3 { margin: 0 0 8px; font-size: 16px; }
+    .confirm-box p { margin: 0 0 20px; font-size: 13px; color: #94a3b8; line-height: 1.6; }
+    .confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #1e293b; border: 1px solid #334155;
+      padding: 8px 16px; border-radius: 8px; font-size: 13px;
+      z-index: 400; opacity: 0; transition: opacity .2s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+
+    .loading-mask {
+      position: fixed; inset: 0; background: rgba(0,0,0,.4);
+      z-index: 500; display: none;
+      align-items: center; justify-content: center;
+      font-size: 14px; color: #e2e8f0;
+    }
+    .loading-mask.show { display: flex; }
+
+    @media (max-width: 900px) {
+      .columns-wrap { grid-template-columns: 1fr; }
+      .column { border-right: none; border-bottom: 1px solid #1e293b; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>Auth.requireLogin();</script>
+</head>
+<body>
+
+<!-- Nav -->
+<nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;">
+  <a href="requirement.html" style="color:#94a3b8;text-decoration:none;">需求追踪</a>
+  <a href="index.html" style="color:#94a3b8;text-decoration:none;">素材审核</a>
+  <a href="image-select.html" style="color:#94a3b8;text-decoration:none;">生图审核</a>
+  <a href="draft-review.html" style="color:#94a3b8;text-decoration:none;">草稿审核</a>
+  <a href="dashboard.html" style="color:#94a3b8;text-decoration:none;">数据看板</a>
+  <a href="tasks.html" style="color:#94a3b8;text-decoration:none;">任务看板</a>
+  <a href="materials-pool.html" style="color:#6366f1;font-weight:600;text-decoration:none;">素材池</a>
+  <a href="command-log.html" style="color:#94a3b8;text-decoration:none;">指令日志</a>
+  <a href="user-manage.html" style="color:#94a3b8;text-decoration:none;">用户管理</a>
+</nav>
+<script>
+(function(){
+  var u = localStorage.getItem('mcn_current_user');
+  if(u) document.getElementById('mcn-nav').style.display='flex';
+  var links = document.querySelectorAll('#mcn-nav a');
+  var path = location.pathname.split('/').pop() || 'index.html';
+  links.forEach(function(a){
+    if(a.getAttribute('href') === path){
+      a.style.color='#6366f1'; a.style.fontWeight='600';
+    }
+    a.addEventListener('mouseover',function(){this.style.color='#e2e8f0';});
+    a.addEventListener('mouseout',function(){
+      if(this.getAttribute('href')===path){this.style.color='#6366f1';}
+      else{this.style.color='#94a3b8';}
+    });
+  });
+})();
+</script>
+
+<!-- Page Header -->
+<div class="page-header">
+  <h1>🗂️ 可用素材池</h1>
+  <div class="stats-bar">
+    <div class="stat-chip">Face <span id="count-face">-</span></div>
+    <div class="stat-chip">Nail <span id="count-nail">-</span></div>
+    <div class="stat-chip">Nail-Face <span id="count-nailface">-</span></div>
+    <div class="stat-chip">总计 <span id="count-total">-</span></div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <span class="filter-label">显示：</span>
+  <select id="filter-used">
+    <option value="all">全部</option>
+    <option value="unused" selected>未使用</option>
+    <option value="used">已使用</option>
+  </select>
+  <span class="filter-label">排序：</span>
+  <select id="sort-by">
+    <option value="created_at_desc">最新入库</option>
+    <option value="score_desc">评分最高</option>
+    <option value="created_at_asc">最早入库</option>
+  </select>
+  <button class="btn btn-secondary" onclick="loadAll()">🔄 刷新</button>
+  <button class="btn btn-secondary" onclick="selectAll()">全选</button>
+  <button class="btn btn-secondary" onclick="clearSelect()">取消选择</button>
+</div>
+
+<!-- Three Columns -->
+<div class="columns-wrap">
+  <div class="column col-face">
+    <div class="column-header">
+      <h2>👤 Face</h2>
+      <span class="col-count" id="col-count-face">0</span>
+    </div>
+    <div class="img-grid" id="grid-face"></div>
+  </div>
+  <div class="column col-nail">
+    <div class="column-header">
+      <h2>💅 Nail</h2>
+      <span class="col-count" id="col-count-nail">0</span>
+    </div>
+    <div class="img-grid" id="grid-nail"></div>
+  </div>
+  <div class="column col-nailface">
+    <div class="column-header">
+      <h2>✨ Nail-Face</h2>
+      <span class="col-count" id="col-count-nailface">0</span>
+    </div>
+    <div class="img-grid" id="grid-nailface"></div>
+  </div>
+</div>
+
+<!-- Bulk Bar -->
+<div class="bulk-bar" id="bulk-bar">
+  <span class="count">已选 <span id="sel-count">0</span> 张</span>
+  <button class="btn btn-danger" onclick="confirmBulkDelete()">🗑️ 批量删除</button>
+  <button class="btn btn-secondary" onclick="clearSelect()">取消</button>
+</div>
+
+<!-- Preview Modal -->
+<div class="preview-modal" id="preview-modal" onclick="closePreview(event)">
+  <div class="preview-inner" id="preview-inner">
+    <button class="preview-close" onclick="closePreview()">✕</button>
+    <img id="preview-img" src="" alt="" />
+    <div class="preview-info" id="preview-info"></div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="confirm-modal" id="confirm-modal">
+  <div class="confirm-box">
+    <h3 id="confirm-title">确认删除</h3>
+    <p id="confirm-msg"></p>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">取消</button>
+      <button class="btn btn-danger" id="confirm-ok-btn" onclick="doDelete()">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Loading -->
+<div class="loading-mask" id="loading-mask">⏳ 处理中…</div>
+
+<script>
+const sb = supabase.createClient(
+  window.SUPABASE_DEFAULTS.url,
+  window.SUPABASE_DEFAULTS.anonKey
+);
+
+let allData = { face: [], nail: [], 'nail-face': [] };
+let selected = new Set();
+let pendingDeleteIds = [];
+
+// ── Load ──────────────────────────────────────────────
+async function loadAll() {
+  selected.clear();
+  updateBulkBar();
+
+  const filterUsed = document.getElementById('filter-used').value;
+  const sortBy = document.getElementById('sort-by').value;
+
+  let query = sb.table('available_materials')
+    .select('id,image_url,category,used_by,score,source_keyword,tags,created_at,used_count')
+    .limit(500);
+
+  if (filterUsed === 'unused') query = query.eq('used_by', '{}');
+  else if (filterUsed === 'used') query = query.neq('used_by', '{}');
+
+  if (sortBy === 'created_at_desc') query = query.order('created_at', { ascending: false });
+  else if (sortBy === 'created_at_asc') query = query.order('created_at', { ascending: true });
+  else if (sortBy === 'score_desc') query = query.order('score', { ascending: false, nullsFirst: false });
+
+  const { data, error } = await query;
+  if (error) { showToast('加载失败：' + error.message, 'error'); return; }
+
+  allData = { face: [], nail: [], 'nail-face': [] };
+  (data || []).forEach(row => {
+    const cat = row.category || 'face';
+    if (allData[cat]) allData[cat].push(row);
+    else allData['face'].push(row);
+  });
+
+  render();
+  updateStats(data || []);
+}
+
+function render() {
+  renderGrid('face', 'grid-face', 'col-count-face');
+  renderGrid('nail', 'grid-nail', 'col-count-nail');
+  renderGrid('nail-face', 'grid-nailface', 'col-count-nailface');
+}
+
+function renderGrid(category, gridId, countId) {
+  const grid = document.getElementById(gridId);
+  const items = allData[category] || [];
+  document.getElementById(countId).textContent = items.length;
+
+  if (!items.length) {
+    grid.innerHTML = '<div class="empty-col">暂无素材</div>';
+    return;
+  }
+
+  grid.innerHTML = items.map(item => {
+    const isUsed = item.used_by && item.used_by.length > 0;
+    const usedBy = isUsed ? item.used_by[0] : '';
+    const isSelected = selected.has(item.id);
+    return `
+      <div class="img-card ${isUsed ? 'used' : ''} ${isSelected ? 'selected' : ''}"
+           data-id="${item.id}" data-cat="${category}" onclick="toggleSelect(event, '${item.id}')">
+        <img src="${item.image_url}" alt="" loading="lazy"
+             onerror="this.style.background='#334155';this.style.minHeight='130px'" />
+        ${isUsed ? `<div class="used-badge">已用: ${usedBy}</div>` : ''}
+        <div class="select-check">${isSelected ? '✓' : ''}</div>
+        <div class="overlay">
+          <button class="overlay-btn" onclick="previewImg(event,'${item.id}')" title="预览">🔍</button>
+          <button class="overlay-btn del" onclick="confirmSingleDelete(event,'${item.id}')" title="删除">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateStats(data) {
+  const face = data.filter(d => d.category === 'face').length;
+  const nail = data.filter(d => d.category === 'nail').length;
+  const nf = data.filter(d => d.category === 'nail-face').length;
+  document.getElementById('count-face').textContent = face;
+  document.getElementById('count-nail').textContent = nail;
+  document.getElementById('count-nailface').textContent = nf;
+  document.getElementById('count-total').textContent = data.length;
+}
+
+// ── Select ─────────────────────────────────────────────
+function toggleSelect(e, id) {
+  // 如果点的是 overlay 按钮，不触发 select
+  if (e.target.closest('.overlay-btn')) return;
+  if (selected.has(id)) selected.delete(id);
+  else selected.add(id);
+  // 更新该卡片样式
+  const card = document.querySelector(`[data-id="${id}"]`);
+  if (card) {
+    card.classList.toggle('selected', selected.has(id));
+    const check = card.querySelector('.select-check');
+    if (check) check.textContent = selected.has(id) ? '✓' : '';
+  }
+  updateBulkBar();
+}
+
+function selectAll() {
+  ['face','nail','nail-face'].forEach(cat => {
+    allData[cat].forEach(item => selected.add(item.id));
+  });
+  render();
+  updateBulkBar();
+}
+
+function clearSelect() {
+  selected.clear();
+  render();
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById('bulk-bar');
+  document.getElementById('sel-count').textContent = selected.size;
+  bar.classList.toggle('visible', selected.size > 0);
+}
+
+// ── Preview ────────────────────────────────────────────
+function previewImg(e, id) {
+  e.stopPropagation();
+  const item = findItem(id);
+  if (!item) return;
+  document.getElementById('preview-img').src = item.image_url;
+  document.getElementById('preview-info').innerHTML =
+    `<b>${item.category}</b> &nbsp;|&nbsp; ${item.source_keyword || '-'} &nbsp;|&nbsp; ` +
+    `评分 ${item.score ?? '-'} &nbsp;|&nbsp; ` +
+    `${item.used_by && item.used_by.length ? '已使用: ' + item.used_by.join(', ') : '未使用'} &nbsp;|&nbsp; ` +
+    `入库 ${item.created_at ? item.created_at.slice(0,10) : '-'}`;
+  document.getElementById('preview-modal').classList.add('open');
+}
+
+function closePreview(e) {
+  if (e && e.target !== document.getElementById('preview-modal') && !e.target.classList.contains('preview-close')) return;
+  document.getElementById('preview-modal').classList.remove('open');
+}
+
+// ── Delete ─────────────────────────────────────────────
+function confirmSingleDelete(e, id) {
+  e.stopPropagation();
+  pendingDeleteIds = [id];
+  document.getElementById('confirm-title').textContent = '确认删除';
+  document.getElementById('confirm-msg').textContent = '将从 available_materials 表中删除这张素材。此操作不可撤销。';
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function confirmBulkDelete() {
+  pendingDeleteIds = [...selected];
+  document.getElementById('confirm-title').textContent = `批量删除 ${pendingDeleteIds.length} 张`;
+  document.getElementById('confirm-msg').textContent =
+    `将从 available_materials 表中删除选中的 ${pendingDeleteIds.length} 张素材。此操作不可撤销。`;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  pendingDeleteIds = [];
+}
+
+async function doDelete() {
+  closeConfirm();
+  if (!pendingDeleteIds.length) return;
+  showLoading(true);
+  const ids = pendingDeleteIds;
+  pendingDeleteIds = [];
+
+  const { error } = await sb.table('available_materials')
+    .delete()
+    .in('id', ids);
+
+  showLoading(false);
+  if (error) {
+    showToast('删除失败：' + error.message, 'error');
+  } else {
+    showToast(`已删除 ${ids.length} 张素材`);
+    selected.clear();
+    await loadAll();
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────
+function findItem(id) {
+  for (const cat of ['face','nail','nail-face']) {
+    const item = allData[cat].find(i => i.id === id);
+    if (item) return item;
+  }
+  return null;
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.color = type === 'error' ? '#f87171' : '#34d399';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function showLoading(show) {
+  document.getElementById('loading-mask').classList.toggle('show', show);
+}
+
+// ── Filter/Sort listeners ──────────────────────────────
+document.getElementById('filter-used').addEventListener('change', loadAll);
+document.getElementById('sort-by').addEventListener('change', loadAll);
+
+// ── Init ──────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>

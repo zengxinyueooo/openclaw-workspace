@@ -255,6 +255,58 @@ Main agent responsibilities: Receiving instructions, distributing tasks, reporti
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
 
+## 📁 沙箱持久化路径说明
+
+> ⚠️ 本节规则仅适用于**沙箱环境**（sandbox-ide-*）。本机 Mac/Linux 部署不适用。
+
+沙箱内有两套路径指向同一个持久化目录，本质是同一个挂载：
+
+| 路径 | 说明 |
+|------|------|
+| `/mnt/openclaw/.openclaw/workspace/` | **正确的持久化路径**，文件属主 catclaw，可读写 |
+| `/root/.openclaw/workspace/` | 同一目录的另一个挂载点，文件属主 root，catclaw 无写权限 |
+
+**结论：在沙箱环境中修改 `AGENTS.md`、`SOUL.md`、`MEMORY.md` 等 workspace 文件，必须用 `/mnt/openclaw/.openclaw/workspace/` 路径。**
+
+> ⚠️ 如果发现某文件属主是 root 导致无法写入，用以下方法修复：
+> ```bash
+> cat /mnt/openclaw/.openclaw/workspace/<文件名> > /tmp/new_file
+> mv /tmp/new_file /mnt/openclaw/.openclaw/workspace/<文件名>
+> # mv 后属主自动变为 catclaw，之后可正常编辑
+> ```
+
+## 🖥️ 审核页部署说明
+
+审核页分两个部分，沙箱重启后需分别恢复：
+
+### 1. 前端文件（持久化，无需重新部署）
+- **持久化目录**：`/mnt/openclaw/mcn-review/`（沙箱重启不丢失）
+- **源目录**：`/root/.openclaw/workspace/tasks/supabase-materials/review/`
+- **更新代码后同步**：
+  ```bash
+  cp -r /root/.openclaw/workspace/tasks/supabase-materials/review/. /mnt/openclaw/mcn-review/
+  ```
+
+### 2. HTTP Server（沙箱重启后需恢复）
+- **启动脚本**：`/root/.openclaw/scripts/start-review-server.sh`
+- **手动恢复**：
+  ```bash
+  bash /root/.openclaw/scripts/start-review-server.sh
+  ```
+- **自动恢复**：cron job `review-server-watchdog` 每天 07:00 自动检查并拉起
+- **端口**：8080
+- **查当前 IP**：`ip addr show eth0 | grep 'inet '`
+
+### 审核页地址
+| 页面 | 路径 |
+|------|------|
+| 生图审核 | `http://<IP>:8080/image-select.html` |
+| 素材审核 | `http://<IP>:8080/index.html` |
+| 草稿审核 | `http://<IP>:8080/draft-review.html` |
+| 数据看板 | `http://<IP>:8080/dashboard.html` |
+
+> nginx 配置备份在 `/mnt/openclaw/nginx-review.conf`，当前因权限问题用 Python HTTP server 替代。
+
 # OpenClaw 通用安全规则
 
 > **核心目标**：

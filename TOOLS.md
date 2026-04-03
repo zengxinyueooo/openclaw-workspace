@@ -84,14 +84,22 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 | 页面 | URL |
 |------|-----|
 | 素材审核 | https://review-gold-seven.vercel.app/index.html |
+| 素材池 | https://review-gold-seven.vercel.app/materials-pool.html |
 | 生图审核 | https://review-gold-seven.vercel.app/image-select.html |
 | 草稿审核 | https://review-gold-seven.vercel.app/draft-review.html |
 | 数据看板 | https://review-gold-seven.vercel.app/dashboard.html |
 
 - **部署命令**：
   ```bash
-  cd tasks/supabase-materials/review && npx vercel --yes --prod
+  cd tasks/supabase-materials/review && npx vercel@32 --yes --prod --token <VERCEL_TOKEN>
   ```
+
+### 审核页本地 HTTP Server
+
+- **⚠️ 铁律**：所有页面文件必须写到 `/mnt/openclaw/mcn-review/`，这是 server 实际 serve 的目录
+- `/root/mcn-review/` 是旧残留目录，不要改它，server 重启后不再指向它
+- **重启 server**：`bash /root/.openclaw/scripts/start-review-server.sh`
+- **部署流程**：改文件 → 写到 `/mnt/openclaw/mcn-review/` → 同步到 `tasks/supabase-materials/review/` → vercel 部署
 
 ### Netlify 站点（备用，额度已满）
 
