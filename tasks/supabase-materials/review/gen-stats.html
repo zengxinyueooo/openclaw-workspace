@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>生图成功率统计</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <link rel="stylesheet" href="shared.css">
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>Auth.requireLogin();</script>
+  <style>
+    .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .seg-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
+      padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all .15s; }
+    .seg-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .seg-btn:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .kpi-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+    .kpi-card h4 { margin: 0 0 8px; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .05em; }
+    .kpi-val { font-size: 32px; font-weight: 700; color: var(--text); }
+    .kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .chart-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media(max-width:700px){ .chart-row { grid-template-columns: 1fr; } }
+    .chart-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+    .chart-card h3 { margin: 0 0 14px; font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .05em; }
+    .chart-wrap { position: relative; height: 220px; }
+
+    .table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+    .table-card h3 { margin: 0 0 14px; font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .05em; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-weight: 500; }
+    td { padding: 8px 10px; border-bottom: 1px solid #1e293b; color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-ok  { background: #14532d44; color: #4ade80; }
+    .badge-err { background: #7f1d1d44; color: #f87171; }
+    .rate-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .rate-bar { height: 6px; border-radius: 3px; background: var(--accent); }
+
+    .loading { text-align: center; padding: 60px; color: var(--text-muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<!-- 导航 -->
+<nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;">
+  <a href="requirement.html"  style="color:#94a3b8;text-decoration:none;">需求追踪</a>
+  <a href="index.html"        style="color:#94a3b8;text-decoration:none;">素材审核</a>
+  <a href="materials-pool.html" style="color:#94a3b8;text-decoration:none;">素材池</a>
+  <a href="image-select.html" style="color:#94a3b8;text-decoration:none;">生图审核</a>
+  <a href="draft-review.html" style="color:#94a3b8;text-decoration:none;">草稿审核</a>
+  <a href="dashboard.html"    style="color:#94a3b8;text-decoration:none;">数据看板</a>
+  <a href="gen-stats.html"    style="color:#94a3b8;text-decoration:none;">生图统计</a>
+  <a href="tasks.html"        style="color:#94a3b8;text-decoration:none;">任务看板</a>
+  <a href="command-log.html"  style="color:#94a3b8;text-decoration:none;">指令日志</a>
+  <a href="user-manage.html"  style="color:#94a3b8;text-decoration:none;">用户管理</a>
+</nav>
+<script>
+(function(){
+  var u = localStorage.getItem('mcn_current_user');
+  if(u) document.getElementById('mcn-nav').style.display='flex';
+  var links = document.querySelectorAll('#mcn-nav a');
+  var path = location.pathname.split('/').pop() || 'index.html';
+  links.forEach(function(a){
+    if(a.getAttribute('href') === path){ a.style.color='#6366f1'; a.style.fontWeight='600'; }
+    a.addEventListener('mouseover',function(){ this.style.color='#e2e8f0'; });
+    a.addEventListener('mouseout',function(){
+      this.style.color = (this.getAttribute('href')===path) ? '#6366f1' : '#94a3b8';
+    });
+  });
+})();
+</script>
+
+<main class="app">
+  <header class="topbar">
+    <div>
+      <h1>生图成功率统计</h1>
+      <p class="subtitle">按日 / 周 / 月追踪各工作流的生图调用成功率与错误分布</p>
+    </div>
+    <div class="status" id="status">未连接</div>
+  </header>
+
+  <!-- Supabase 配置 -->
+  <section class="config" id="config" style="display:none;">
+    <label>Supabase 地址<input id="supabase-url" type="text" placeholder="https://xxxx.supabase.co"></label>
+    <label>匿名密钥<input id="supabase-key" type="password" placeholder="eyJhbGci..."></label>
+    <button id="connect">连接</button>
+  </section>
+
+  <section id="main-content" style="display:none;">
+    <!-- 时间粒度切换 -->
+    <div class="toolbar">
+      <button class="seg-btn active" data-grain="day">日度</button>
+      <button class="seg-btn" data-grain="week">周度</button>
+      <button class="seg-btn" data-grain="month">月度</button>
+      <select id="workflow-filter" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:13px;">
+        <option value="">全部工作流</option>
+        <option value="ai_aesthetic">颜值 (ai_aesthetic)</option>
+        <option value="nail_leg">美甲露腿 (nail_leg)</option>
+        <option value="nail_hand">美甲手部 (nail_hand)</option>
+        <option value="nail_both">美甲双风格 (nail_both)</option>
+      </select>
+      <button id="refresh-btn" style="margin-left:auto;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;">↻ 刷新</button>
+    </div>
+
+    <!-- KPI 卡片 -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <h4>总调用次数</h4>
+        <div class="kpi-val" id="kpi-total">-</div>
+        <div class="kpi-sub">当前时间范围</div>
+      </div>
+      <div class="kpi-card">
+        <h4>成功次数</h4>
+        <div class="kpi-val" id="kpi-success">-</div>
+        <div class="kpi-sub" id="kpi-success-sub">-</div>
+      </div>
+      <div class="kpi-card">
+        <h4>成功率</h4>
+        <div class="kpi-val" id="kpi-rate">-</div>
+        <div class="kpi-sub">成功调用 / 总调用</div>
+      </div>
+      <div class="kpi-card">
+        <h4>平均出图数</h4>
+        <div class="kpi-val" id="kpi-avg-img">-</div>
+        <div class="kpi-sub">成功时平均每次产出</div>
+      </div>
+      <div class="kpi-card">
+        <h4>平均耗时</h4>
+        <div class="kpi-val" id="kpi-avg-dur">-</div>
+        <div class="kpi-sub">成功调用平均秒数</div>
+      </div>
+    </div>
+
+    <!-- 趋势 + 错误分布 -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>成功率趋势</h3>
+        <div class="chart-wrap">
+          <canvas id="trend-chart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>错误类型分布</h3>
+        <div class="chart-wrap">
+          <canvas id="error-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- 各工作流对比 -->
+    <div class="table-card">
+      <h3>各工作流对比</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>工作流</th>
+            <th>调用次数</th>
+            <th>成功率</th>
+            <th></th>
+            <th>平均出图</th>
+            <th>平均耗时</th>
+            <th>常见错误</th>
+          </tr>
+        </thead>
+        <tbody id="workflow-table-body">
+          <tr><td colspan="7" class="loading">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 明细日志 -->
+    <div class="table-card">
+      <h3>最近调用明细 <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(最新50条)</span></h3>
+      <table>
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>工作流</th>
+            <th>人设</th>
+            <th>结果</th>
+            <th>出图数</th>
+            <th>耗时</th>
+            <th>错误类型</th>
+          </tr>
+        </thead>
+        <tbody id="detail-table-body">
+          <tr><td colspan="7" class="loading">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+// ─── Supabase 初始化 ──────────────────────────────────────────────────────────
+let sb = null;
+let currentGrain = 'day';
+let currentWorkflow = '';
+let trendChart = null;
+let errorChart = null;
+
+document.getElementById('connect').addEventListener('click', connect);
+document.querySelectorAll('.seg-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentGrain = btn.dataset.grain;
+    loadAll();
+  });
+});
+document.getElementById('workflow-filter').addEventListener('change', e => {
+  currentWorkflow = e.target.value;
+  loadAll();
+});
+document.getElementById('refresh-btn').addEventListener('click', loadAll);
+
+async function connect() {
+  const url = document.getElementById('supabase-url').value.trim()
+    || (window.AppConfig && AppConfig.supabaseUrl) || '';
+  const key = document.getElementById('supabase-key').value.trim()
+    || (window.AppConfig && AppConfig.supabaseAnonKey) || '';
+  if (!url || !key) { alert('请填写 Supabase 地址和密钥'); return; }
+  try {
+    sb = supabase.createClient(url, key);
+    // 简单探测
+    await sb.from('image_gen_log').select('id', { count: 'exact', head: true });
+    document.getElementById('status').textContent = '已连接';
+    document.getElementById('status').style.color = 'var(--success)';
+    document.getElementById('config').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+    loadAll();
+  } catch(e) {
+    document.getElementById('config').style.display = '';
+    alert('连接失败: ' + e.message);
+  }
+}
+
+// ─── 时间范围 ─────────────────────────────────────────────────────────────────
+function getRange(grain) {
+  const now = new Date();
+  let periods = [];
+  if (grain === 'day') {
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      const label = `${d.getMonth()+1}/${d.getDate()}`;
+      const start = new Date(d); start.setHours(0,0,0,0);
+      const end   = new Date(d); end.setHours(23,59,59,999);
+      periods.push({ label, start: start.toISOString(), end: end.toISOString() });
+    }
+  } else if (grain === 'week') {
+    for (let i = 7; i >= 0; i--) {
+      const d = new Date(now); d.setDate(d.getDate() - i*7);
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - ((d.getDay()+6)%7));
+      monday.setHours(0,0,0,0);
+      const sunday = new Date(monday); sunday.setDate(monday.getDate()+6); sunday.setHours(23,59,59,999);
+      const label = `${monday.getMonth()+1}/${monday.getDate()}`;
+      periods.push({ label, start: monday.toISOString(), end: sunday.toISOString() });
+    }
+  } else {
+    for (let i = 2; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      const end = new Date(d.getFullYear(), d.getMonth()+1, 0, 23, 59, 59, 999);
+      const label = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      periods.push({ label, start: d.toISOString(), end: end.toISOString() });
+    }
+  }
+  return periods;
+}
+
+// ─── 主加载 ───────────────────────────────────────────────────────────────────
+async function loadAll() {
+  if (!sb) return;
+  const periods = getRange(currentGrain);
+  const rangeStart = periods[0].start;
+  const rangeEnd   = periods[periods.length-1].end;
+
+  let query = sb.from('image_gen_log')
+    .select('*')
+    .gte('created_at', rangeStart)
+    .lte('created_at', rangeEnd)
+    .order('created_at', { ascending: false });
+  if (currentWorkflow) query = query.eq('workflow', currentWorkflow);
+
+  const { data, error } = await query;
+  if (error) { console.error(error); return; }
+
+  renderKPI(data);
+  renderTrend(data, periods);
+  renderErrorChart(data);
+  renderWorkflowTable(data);
+  renderDetail(data);
+}
+
+// ─── KPI ──────────────────────────────────────────────────────────────────────
+function renderKPI(rows) {
+  const total   = rows.length;
+  const succRows = rows.filter(r => r.success);
+  const success  = succRows.length;
+  const rate     = total ? Math.round(success/total*100) : 0;
+  const avgImg   = succRows.length
+    ? (succRows.reduce((s,r) => s+(r.image_count||0), 0) / succRows.length).toFixed(1) : '-';
+  const avgDur   = succRows.length
+    ? (succRows.reduce((s,r) => s+(r.duration_seconds||0), 0) / succRows.length).toFixed(1)+'s' : '-';
+
+  document.getElementById('kpi-total').textContent = total;
+  document.getElementById('kpi-success').textContent = success;
+  document.getElementById('kpi-success-sub').textContent = `失败 ${total-success} 次`;
+  document.getElementById('kpi-rate').textContent = rate + '%';
+  document.getElementById('kpi-avg-img').textContent = avgImg === '-' ? '-' : avgImg + '张';
+  document.getElementById('kpi-avg-dur').textContent = avgDur;
+}
+
+// ─── 趋势图 ───────────────────────────────────────────────────────────────────
+function renderTrend(rows, periods) {
+  const map = {};
+  rows.forEach(r => {
+    const d = new Date(r.created_at);
+    let key;
+    if (currentGrain === 'day') {
+      key = `${d.getMonth()+1}/${d.getDate()}`;
+    } else if (currentGrain === 'week') {
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - ((d.getDay()+6)%7));
+      key = `${monday.getMonth()+1}/${monday.getDate()}`;
+    } else {
+      key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    }
+    if (!map[key]) map[key] = { total: 0, success: 0 };
+    map[key].total++;
+    if (r.success) map[key].success++;
+  });
+
+  const labels = periods.map(p => p.label);
+  const rates  = periods.map(p => {
+    const v = map[p.label];
+    if (!v || v.total === 0) return null;
+    return Math.round(v.success / v.total * 100);
+  });
+  const totals = periods.map(p => (map[p.label] || {}).total || 0);
+
+  if (trendChart) trendChart.destroy();
+  const ctx = document.getElementById('trend-chart').getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { type: 'line', label: '成功率 %', data: rates, yAxisID: 'yR',
+          borderColor: '#6366f1', backgroundColor: 'transparent',
+          tension: 0.3, pointRadius: 3, spanGaps: true },
+        { type: 'bar', label: '调用次数', data: totals, yAxisID: 'yL',
+          backgroundColor: '#1e40af55', borderColor: '#3b82f6', borderWidth: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } },
+        yL: { position: 'left', min: 0,
+              ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } },
+        yR: { position: 'right', min: 0, max: 100,
+              ticks: { color: '#64748b', font: { size: 10 }, callback: v => v+'%' },
+              grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+}
+
+// ─── 错误分布 ─────────────────────────────────────────────────────────────────
+function renderErrorChart(rows) {
+  const failed = rows.filter(r => !r.success);
+  const map = {};
+  failed.forEach(r => {
+    const k = r.error_type || 'unknown';
+    map[k] = (map[k]||0) + 1;
+  });
+  const labels = Object.keys(map);
+  const values = labels.map(k => map[k]);
+  const colors = ['#f87171','#fb923c','#facc15','#a78bfa','#60a5fa','#34d399','#f472b6'];
+
+  if (errorChart) errorChart.destroy();
+  const ctx = document.getElementById('error-chart').getContext('2d');
+  if (labels.length === 0) {
+    ctx.clearRect(0,0,999,999);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('暂无失败记录 🎉', ctx.canvas.width/2, ctx.canvas.height/2);
+    errorChart = null;
+    return;
+  }
+  errorChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length),
+                   borderColor: '#0f172a', borderWidth: 2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12 } }
+      }
+    }
+  });
+}
+
+// ─── 工作流对比表 ─────────────────────────────────────────────────────────────
+function renderWorkflowTable(rows) {
+  const map = {};
+  rows.forEach(r => {
+    const k = r.workflow || 'unknown';
+    if (!map[k]) map[k] = { total:0, success:0, imgs:[], durs:[], errors:{} };
+    map[k].total++;
+    if (r.success) {
+      map[k].success++;
+      if (r.image_count) map[k].imgs.push(r.image_count);
+      if (r.duration_seconds) map[k].durs.push(r.duration_seconds);
+    } else {
+      const et = r.error_type || 'unknown';
+      map[k].errors[et] = (map[k].errors[et]||0)+1;
+    }
+  });
+
+  const tbody = document.getElementById('workflow-table-body');
+  if (!Object.keys(map).length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">暂无数据</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = Object.entries(map).sort((a,b) => b[1].total - a[1].total).map(([wf, v]) => {
+    const rate = v.total ? Math.round(v.success/v.total*100) : 0;
+    const avgImg = v.imgs.length ? (v.imgs.reduce((a,b)=>a+b,0)/v.imgs.length).toFixed(1) : '-';
+    const avgDur = v.durs.length ? (v.durs.reduce((a,b)=>a+b,0)/v.durs.length).toFixed(1)+'s' : '-';
+    const topErr = Object.entries(v.errors).sort((a,b)=>b[1]-a[1])[0];
+    const errLabel = topErr ? `${topErr[0]} (${topErr[1]})` : '-';
+    return `<tr>
+      <td><code style="color:var(--accent)">${wf}</code></td>
+      <td>${v.total}</td>
+      <td>${rate}%</td>
+      <td><div class="rate-bar-wrap"><div class="rate-bar" style="width:${rate}px;max-width:100px"></div></div></td>
+      <td>${avgImg === '-' ? '-' : avgImg+'张'}</td>
+      <td>${avgDur}</td>
+      <td style="color:var(--text-muted);font-size:12px">${errLabel}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── 明细日志 ─────────────────────────────────────────────────────────────────
+function renderDetail(rows) {
+  const tbody = document.getElementById('detail-table-body');
+  const recent = rows.slice(0, 50);
+  if (!recent.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">暂无数据</td></tr>';
+    return;
+  }
+  tbody.innerHTML = recent.map(r => {
+    const d = new Date(r.created_at);
+    // Asia/Shanghai +8
+    const local = new Date(d.getTime() + 8*3600*1000);
+    const ts = `${local.getUTCMonth()+1}/${local.getUTCDate()} ${String(local.getUTCHours()).padStart(2,'0')}:${String(local.getUTCMinutes()).padStart(2,'0')}`;
+    const badge = r.success
+      ? '<span class="badge badge-ok">成功</span>'
+      : '<span class="badge badge-err">失败</span>';
+    return `<tr>
+      <td style="font-size:12px;color:var(--text-muted)">${ts}</td>
+      <td><code style="font-size:11px;color:var(--accent)">${r.workflow||'-'}</code></td>
+      <td style="font-size:12px">${r.persona_name||'-'}</td>
+      <td>${badge}</td>
+      <td>${r.image_count != null ? r.image_count+'张' : '-'}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${r.duration_seconds != null ? r.duration_seconds+'s' : '-'}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${r.error_type||'-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── 自动连接（如果 config.js 有配置）────────────────────────────────────────
+window.addEventListener('load', () => {
+  const cfg = window.SUPABASE_DEFAULTS || (window.AppConfig && { url: AppConfig.supabaseUrl, anonKey: AppConfig.supabaseAnonKey });
+  if (cfg && cfg.url && cfg.anonKey) {
+    document.getElementById('supabase-url').value = cfg.url;
+    document.getElementById('supabase-key').value = cfg.anonKey;
+    connect();
+  }
+});
+</script>
+</body>
+</html>

@@ -227,11 +227,12 @@
 <nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;">
   <a href="requirement.html" style="color:#94a3b8;text-decoration:none;">需求追踪</a>
   <a href="index.html" style="color:#94a3b8;text-decoration:none;">素材审核</a>
+  <a href="materials-pool.html" style="color:#94a3b8;text-decoration:none;">素材池</a>
   <a href="image-select.html" style="color:#94a3b8;text-decoration:none;">生图审核</a>
   <a href="draft-review.html" style="color:#94a3b8;text-decoration:none;">草稿审核</a>
   <a href="dashboard.html" style="color:#94a3b8;text-decoration:none;">数据看板</a>
+  <a href="gen-stats.html" style="color:#94a3b8;text-decoration:none;">生图统计</a>
   <a href="tasks.html" style="color:#94a3b8;text-decoration:none;">任务看板</a>
-  <a href="materials-pool.html" style="color:#6366f1;font-weight:600;text-decoration:none;">素材池</a>
   <a href="command-log.html" style="color:#94a3b8;text-decoration:none;">指令日志</a>
   <a href="user-manage.html" style="color:#94a3b8;text-decoration:none;">用户管理</a>
 </nav>
@@ -269,8 +270,8 @@
 <div class="toolbar">
   <span class="filter-label">显示：</span>
   <select id="filter-used">
-    <option value="all">全部</option>
-    <option value="unused" selected>未使用</option>
+    <option value="all" selected>全部</option>
+    <option value="unused">未使用</option>
     <option value="used">已使用</option>
   </select>
   <span class="filter-label">排序：</span>
@@ -312,8 +313,34 @@
 <!-- Bulk Bar -->
 <div class="bulk-bar" id="bulk-bar">
   <span class="count">已选 <span id="sel-count">0</span> 张</span>
+  <button class="btn btn-primary" onclick="openDispatchModal()">🚀 派发需求</button>
   <button class="btn btn-danger" onclick="confirmBulkDelete()">🗑️ 批量删除</button>
   <button class="btn btn-secondary" onclick="clearSelect()">取消</button>
+</div>
+
+<!-- Dispatch Modal -->
+<div class="confirm-modal" id="dispatch-modal">
+  <div class="confirm-box" style="max-width:420px;">
+    <h3>🚀 派发需求</h3>
+    <p style="margin:0 0 12px;font-size:13px;color:#94a3b8;">已选 <span id="dispatch-count" style="color:#f1f5f9;font-weight:600;">0</span> 张素材，选择人设后将直接创建子需求，蜜蜂自动生图。</p>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;color:#64748b;margin-bottom:8px;">选择人设：</div>
+      <div id="persona-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;color:#64748b;margin-bottom:8px;">笔记类型：</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;" id="category-list">
+        <button class="btn btn-secondary" data-cat="颜值日常笔记" onclick="selectCategoryBtn(this,'颜值日常笔记')" style="font-size:12px;padding:5px 10px;">颜值日常笔记</button>
+        <button class="btn btn-secondary" data-cat="纯美甲笔记" onclick="selectCategoryBtn(this,'纯美甲笔记')" style="font-size:12px;padding:5px 10px;">纯美甲笔记</button>
+        <button class="btn btn-secondary" data-cat="腿美甲笔记" onclick="selectCategoryBtn(this,'腿美甲笔记')" style="font-size:12px;padding:5px 10px;">腿美甲笔记</button>
+        <button class="btn btn-secondary" data-cat="颜值美甲笔记" onclick="selectCategoryBtn(this,'颜值美甲笔记')" style="font-size:12px;padding:5px 10px;">颜值美甲笔记</button>
+      </div>
+    </div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" onclick="closeDispatchModal()">取消</button>
+      <button class="btn btn-primary" id="dispatch-ok-btn" onclick="doDispatch()" disabled>确认派发</button>
+    </div>
+  </div>
 </div>
 
 <!-- Preview Modal -->
@@ -344,6 +371,7 @@
 <div class="loading-mask" id="loading-mask">⏳ 处理中…</div>
 
 <script>
+console.log('[materials-pool] SUPABASE_DEFAULTS:', window.SUPABASE_DEFAULTS);
 const sb = supabase.createClient(
   window.SUPABASE_DEFAULTS.url,
   window.SUPABASE_DEFAULTS.anonKey
@@ -352,6 +380,20 @@ const sb = supabase.createClient(
 let allData = { face: [], nail: [], 'nail-face': [] };
 let selected = new Set();
 let pendingDeleteIds = [];
+let selectedPersona = null;
+let selectedCategory = null;
+
+// 人设列表（persona_name -> account_id）
+const PERSONAS = [
+  { name: '沐沐木有烦恼', account_id: 8 },
+  { name: 'doudou调色盘🎨', account_id: 11 },
+  { name: '李慢慢曼妙', account_id: 13 },
+  { name: 'Momo不默默', account_id: 14 },
+  { name: '乌拉拉', account_id: 15 },
+  { name: '先叫Momo', account_id: 17 },
+  { name: '一只小糕糕', account_id: 19 },
+  { name: '小Lin晓晓', account_id: 22 },
+];
 
 // ── Load ──────────────────────────────────────────────
 async function loadAll() {
@@ -361,7 +403,7 @@ async function loadAll() {
   const filterUsed = document.getElementById('filter-used').value;
   const sortBy = document.getElementById('sort-by').value;
 
-  let query = sb.table('available_materials')
+  let query = sb.from('available_materials')
     .select('id,image_url,category,used_by,score,source_keyword,tags,created_at,used_count')
     .limit(500);
 
@@ -373,6 +415,7 @@ async function loadAll() {
   else if (sortBy === 'score_desc') query = query.order('score', { ascending: false, nullsFirst: false });
 
   const { data, error } = await query;
+  console.log('[materials-pool] query result:', data, error);
   if (error) { showToast('加载失败：' + error.message, 'error'); return; }
 
   allData = { face: [], nail: [], 'nail-face': [] };
@@ -404,7 +447,7 @@ function renderGrid(category, gridId, countId) {
 
   grid.innerHTML = items.map(item => {
     const isUsed = item.used_by && item.used_by.length > 0;
-    const usedBy = isUsed ? item.used_by[0] : '';
+    const usedBy = (item.used_by && item.used_by.length > 0) ? item.used_by[0] : '';
     const isSelected = selected.has(item.id);
     return `
       <div class="img-card ${isUsed ? 'used' : ''} ${isSelected ? 'selected' : ''}"
@@ -477,7 +520,7 @@ function previewImg(e, id) {
   document.getElementById('preview-info').innerHTML =
     `<b>${item.category}</b> &nbsp;|&nbsp; ${item.source_keyword || '-'} &nbsp;|&nbsp; ` +
     `评分 ${item.score ?? '-'} &nbsp;|&nbsp; ` +
-    `${item.used_by && item.used_by.length ? '已使用: ' + item.used_by.join(', ') : '未使用'} &nbsp;|&nbsp; ` +
+    `${item.used_count > 0 ? '已使用: ' + (item.used_by||[]).join(', ') : '未使用'} &nbsp;|&nbsp; ` +
     `入库 ${item.created_at ? item.created_at.slice(0,10) : '-'}`;
   document.getElementById('preview-modal').classList.add('open');
 }
@@ -516,7 +559,7 @@ async function doDelete() {
   const ids = pendingDeleteIds;
   pendingDeleteIds = [];
 
-  const { error } = await sb.table('available_materials')
+  const { error } = await sb.from('available_materials')
     .delete()
     .in('id', ids);
 
@@ -549,6 +592,128 @@ function showToast(msg, type) {
 
 function showLoading(show) {
   document.getElementById('loading-mask').classList.toggle('show', show);
+}
+
+// ── Dispatch ───────────────────────────────────────────
+function openDispatchModal() {
+  if (!selected.size) return;
+  selectedPersona = null;
+  selectedCategory = null;
+  document.getElementById('dispatch-count').textContent = selected.size;
+  document.getElementById('dispatch-ok-btn').disabled = true;
+  // 重置类型按钮样式
+  document.querySelectorAll('#category-list .btn').forEach(b => {
+    b.style.background = '#334155'; b.style.color = '#e2e8f0';
+  });
+
+  // 渲染人设按钮
+  const list = document.getElementById('persona-list');
+  list.innerHTML = PERSONAS.map(p => `
+    <button class="btn btn-secondary" data-account="${p.account_id}" data-name="${p.name}"
+      onclick="selectPersonaBtn(this, '${p.name}', ${p.account_id})"
+      style="font-size:12px;padding:5px 10px;">${p.name}</button>
+  `).join('');
+
+  document.getElementById('dispatch-modal').classList.add('open');
+}
+
+function selectPersonaBtn(el, name, accountId) {
+  document.querySelectorAll('#persona-list .btn').forEach(b => {
+    b.style.background = '#334155'; b.style.color = '#e2e8f0';
+  });
+  el.style.background = '#6366f1'; el.style.color = '#fff';
+  selectedPersona = { name, account_id: accountId };
+  document.getElementById('dispatch-ok-btn').disabled = !(selectedPersona && selectedCategory);
+}
+
+function selectCategoryBtn(el, cat) {
+  document.querySelectorAll('#category-list .btn').forEach(b => {
+    b.style.background = '#334155'; b.style.color = '#e2e8f0';
+  });
+  el.style.background = '#6366f1'; el.style.color = '#fff';
+  selectedCategory = cat;
+  document.getElementById('dispatch-ok-btn').disabled = !(selectedPersona && selectedCategory);
+}
+
+function closeDispatchModal() {
+  document.getElementById('dispatch-modal').classList.remove('open');
+  selectedPersona = null;
+  selectedCategory = null;
+}
+
+async function doDispatch() {
+  if (!selectedPersona || !selected.size) return;
+
+  // 先保存再关弹窗（closeDispatchModal 会清空 selectedPersona/selectedCategory）
+  const persona = { ...selectedPersona };
+  const category = selectedCategory || '常态化运营笔记';
+  const materialIds = [...selected];
+
+  closeDispatchModal();
+  showLoading(true);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }).replace('/', '-');
+
+  // 1. 先插入父需求
+  console.log('[dispatch] 开始插入父需求', selectedPersona, category);
+  const { data: reqData, error: reqErr } = await sb.from('requirement').insert({
+    scene_type: '常态化运营',
+    description: `[手动派发] ${persona.name} - ${category}`,
+    status: 'pending',
+    start_time: new Date(now.setHours(0,0,0,0)).toISOString(),
+    end_time: new Date(now.setHours(23,59,59,999)).toISOString(),
+  }).select('id').single();
+
+  console.log('[dispatch] 父需求结果:', reqData, reqErr);
+  if (reqErr || !reqData) {
+    showLoading(false);
+    showToast('创建父需求失败：' + (reqErr?.message || '未知错误'), 'error');
+    return;
+  }
+  const requirementId = reqData.id;
+
+  // 2. 插入子需求
+  const { error } = await sb.from('sub_requirement').insert({
+    requirement_id: requirementId,
+    account_id: persona.account_id,
+    persona_name: persona.name,
+    content_description: '常态化运营笔记',
+    category: category,
+    material_ids: materialIds,
+    status: 'pending',
+    is_commercial: false,
+    progress: [{
+      at: new Date().toISOString(),
+      agent: 'manual',
+      action: `手动派发，素材 ${materialIds.length} 张，人设：${persona.name}，类型：${category}`
+    }]
+  });
+
+  if (error) {
+    showLoading(false);
+    showToast('派发失败：' + error.message, 'error');
+    return;
+  }
+
+  // 3. 标记素材已被占用（同松鼠逻辑：used_by = [persona_name]）
+  const markErrors = [];
+  for (const mid of materialIds) {
+    const { error: markErr } = await sb.from('available_materials')
+      .update({ used_by: [persona.name], last_used_at: new Date().toISOString() })
+      .eq('id', mid);
+    if (markErr) markErrors.push(mid);
+  }
+
+  showLoading(false);
+
+  if (markErrors.length) {
+    showToast(`⚠️ 派发成功，但 ${markErrors.length} 张素材占用标记失败`, 'error');
+  } else {
+    showToast(`✅ 已派发给 ${persona.name}，蜜蜂将自动生图`);
+  }
+  selected.clear();
+  updateBulkBar();
+  await loadAll();
 }
 
 // ── Filter/Sort listeners ──────────────────────────────
