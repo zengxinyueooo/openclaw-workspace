@@ -1,6 +1,26 @@
 /* global supabase */
 const STATUS = { OK: "ok", ERROR: "error", DEFAULT: "default" };
 
+// 人设 portraitReference 字典（来自 workspace/shared/accounts/*/profile.json persona_portraitRef 字段）
+const PERSONA_PORTRAIT = {
+  "Momo不默默": "https://p1.meituan.net/dzusergrowthcontent/d92bf954fc5a4f6223bc09b73854304b1393088.png",
+  "一只小糕糕": "https://p0.meituan.net/dzusergrowthcontent/5b8569c2e973744e96343f7d8b1ddca41118096.png",
+  "乌拉拉": "https://p0.meituan.net/dzusergrowthcontent/63f46da406965f6a6bbb9143d147c68c584044.png",
+  "体温偏高": "https://p1.meituan.net/dzusergrowthcontent/f53c2dd7b6bc4dc0b92ecaeab9b660d61434932.png",
+  "先叫Momo": "https://p0.meituan.net/dzusergrowthcontent/036033675897e2c69cf7f1ea776b4c871184315.png",
+  "全糖去冰": "https://p0.meituan.net/dzusergrowthcontent/d11643e48dd869d6e8d46dccbc6344ad2758649.png",
+  "增增哇嘎奶": "https://p0.meituan.net/dzusergrowthcontent/aeab1e99c76883338c31544bed559ac61986122.png",
+  "小Lin晓晓": "https://p0.meituan.net/dzusergrowthcontent/a57c3c7cc76611ce76ff9437e4e7b0134520706.png",
+  "旺仔小拳头": "https://p0.meituan.net/dzusergrowthcontent/eafe49f426a7d1c63695737b56a8ea742852073.png",
+  "李慢慢曼妙": "https://p0.meituan.net/dzusergrowthcontent/4c8f7657c0c9a44bfa616d0d72708c1c1573787.png",
+  "沐沐木有烦恼": "https://p1.meituan.net/dzusergrowthcontent/70d2a4d7c3c468539c448977c80de99e986524.jpg",
+  "爱美的豆浆妈妈": "https://p0.meituan.net/dzusergrowthcontent/a2dad33c8d75ea561a9a8077965bb10e1530356.png",
+  "糯糯糖要努力": "https://p0.meituan.net/dzusergrowthcontent/155cd3451f2284446a37008636dabff51033608.png",
+  "腿短但跑得快": "https://p0.meituan.net/dzusergrowthcontent/87687953fe834dba348be21affb52d521420590.png",
+  "被夸会脸红": "https://p1.meituan.net/dzusergrowthcontent/af80306282f20c4c5bcfbe6148f57b511573366.png",
+  "高冷汉堡包": "https://p0.meituan.net/dzusergrowthcontent/30ef5b7c28cf50a04de64c6160f0f5b22755711.png",
+};
+
 let client = null;
 let currentSubId = null;
 let currentTaskIdParam = null;
@@ -41,13 +61,13 @@ const TYPE_HANDLERS = {
           face_passed_count: passedCount,
           pending_review_count: pendingReviewCount
         };
-      }).filter(t => t.pending_review_count > 0);
+      }).filter(t => t.face_passed_count >= 8 && t.pending_review_count > 0);
       return tasks;
     },
     // 单个任务加载图片时的查询
     galleryQuery: async (client, subId) => {
       const { data: sub, error: subError } = await client
-        .from("sub_requirement").select("id,persona_name,status,draft_id,created_at").eq("id", subId).single();
+        .from("sub_requirement").select("id,persona_name,status,draft_id,created_at,material_ids").eq("id", subId).single();
       if (subError) throw subError;
 
       const { data: imgs, error } = await client
@@ -59,17 +79,37 @@ const TYPE_HANDLERS = {
       if (error) throw error;
 
       let styleUrl = null;
+      let portraitUrl = null;
+      let materialUrl = null;
+
+      // 1. 人物参考图：优先从人设字典取，否则从 generation_tasks.portrait_url
+      portraitUrl = PERSONA_PORTRAIT[sub.persona_name] || null;
+
+      // 2. 素材参考图：从 sub_requirement.material_ids 查第一张
+      const materialIds = sub.material_ids;
+      if (materialIds && materialIds.length > 0) {
+        const { data: mats } = await client
+          .from("materials").select("image_url").in("id", materialIds).limit(1);
+        if (mats && mats.length > 0) materialUrl = mats[0].image_url || null;
+      }
+
+      // 3. 风格参考图：从 generation_tasks.style_url
       const taskIds = [...new Set((imgs || []).map(i => i.task_id).filter(Boolean))];
       if (taskIds.length > 0) {
         const { data: tasks } = await client
-          .from("generation_tasks").select("portrait_url,style_url").in("id", taskIds).not("style_url", "is", null).limit(1);
-        if (tasks && tasks.length > 0) styleUrl = tasks[0].style_url;
+          .from("generation_tasks").select("portrait_url,style_url").in("id", taskIds).limit(1);
+        if (tasks && tasks.length > 0) {
+          if (!portraitUrl) portraitUrl = tasks[0].portrait_url || null;
+          styleUrl = tasks[0].style_url || null;
+        }
       }
 
       return {
         sub,
         imgs: imgs || [],
         styleUrl,
+        portraitUrl,
+        materialUrl,
         facePassedCount: (imgs || []).filter(i => i.face_passed && i.status !== "ai_rejected").length
       };
     },
@@ -393,7 +433,7 @@ async function fetchGallery(subId) {
       handler = isNail ? TYPE_HANDLERS.nail : TYPE_HANDLERS.face;
     }
 
-    const { sub, imgs, styleUrl, facePassedCount } = await handler.galleryQuery(client, subId);
+    const { sub, imgs, styleUrl, portraitUrl, materialUrl, facePassedCount } = await handler.galleryQuery(client, subId);
 
     currentSub = {
       id: sub.id,
@@ -413,7 +453,7 @@ async function fetchGallery(subId) {
     renderTaskMeta(currentSub);
 
     if (handler.hasRefImages) {
-      renderRefImages(sub.persona_name, styleUrl);
+      renderRefImages(portraitUrl, materialUrl, styleUrl);
     } else {
       refImagesEl.style.display = "none";
     }
@@ -443,23 +483,16 @@ function renderTaskMeta(task) {
   `;
 }
 
-function renderRefImages(personaName, taskStyleUrl) {
-  const PERSONA_REFS = {
-    "先叫Momo": "https://img.meituan.net/dzusergrowthcontent/1141d96c336f309ca08a94b5c1bc26e81155511.png",
-    "沐沐木有烦恼": "https://img.meituan.net/dzusergrowthcontent/0783f10c44757bb91f44b7db8b972663306584.jpg",
-    "李慢慢曼妙": "https://img.meituan.net/dzusergrowthcontent/38b2f56baa655ea28ddcecaa7d63f4931364959.png",
-    "一只小糕糕": "https://img.meituan.net/dzusergrowthcontent/987cb0ec713970b38ce121e915bdc718965767.png",
-    "Momo不默默": "https://img.meituan.net/dzusergrowthcontent/82eefd3030cf510cca831343338db9c11178247.png",
-    "小Lin晓晓": "https://img.meituan.net/dzusergrowthcontent/42e3679ecdab745d0aa424e83e2dd7d01103459.png",
-    "乌拉拉": "https://img.meituan.net/dzusergrowthcontent/63f46da406965f6a6bbb9143d147c68c584044.png"
-  };
-  const portraitUrl = PERSONA_REFS[personaName] || "";
-  const styleUrl = taskStyleUrl || portraitUrl;
-  if (!portraitUrl) { refImagesEl.style.display = "none"; return; }
+function renderRefImages(portraitUrl, materialUrl, taskStyleUrl) {
+  const cards = [];
+  if (portraitUrl) cards.push({ url: portraitUrl, label: "人物参考" });
+  if (materialUrl) cards.push({ url: materialUrl, label: "素材原图" });
+  if (taskStyleUrl && taskStyleUrl !== portraitUrl) cards.push({ url: taskStyleUrl, label: "风格参考" });
+
+  if (!cards.length) { refImagesEl.style.display = "none"; return; }
   refImagesEl.style.display = "";
   refImagesEl.innerHTML = '<div class="ref-header">参考图</div><div class="ref-grid">' +
-    `<div class="ref-card"><img src="${portraitUrl}" alt="肖像参考" /><div class="ref-label">肖像参考</div></div>` +
-    (styleUrl !== portraitUrl ? `<div class="ref-card"><img src="${styleUrl}" alt="风格参考" /><div class="ref-label">风格参考</div></div>` : '') +
+    cards.map(c => `<div class="ref-card"><img src="${c.url}" alt="${c.label}" /><div class="ref-label">${c.label}</div></div>`).join('') +
     '</div>';
   refImagesEl.querySelectorAll("img").forEach(img => {
     img.addEventListener("click", () => {
