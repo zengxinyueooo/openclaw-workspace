@@ -80,20 +80,11 @@ const TYPE_HANDLERS = {
 
       let styleUrl = null;
       let portraitUrl = null;
-      let materialUrl = null;
 
       // 1. 人物参考图：优先从人设字典取，否则从 generation_tasks.portrait_url
       portraitUrl = PERSONA_PORTRAIT[sub.persona_name] || null;
 
-      // 2. 素材参考图：从 sub_requirement.material_ids 查第一张
-      const materialIds = sub.material_ids;
-      if (materialIds && materialIds.length > 0) {
-        const { data: mats } = await client
-          .from("materials").select("image_url").in("id", materialIds).limit(1);
-        if (mats && mats.length > 0) materialUrl = mats[0].image_url || null;
-      }
-
-      // 3. 风格参考图：从 generation_tasks.style_url
+      // 2. 风格参考图：从 generation_tasks.style_url
       const taskIds = [...new Set((imgs || []).map(i => i.task_id).filter(Boolean))];
       if (taskIds.length > 0) {
         const { data: tasks } = await client
@@ -109,7 +100,6 @@ const TYPE_HANDLERS = {
         imgs: imgs || [],
         styleUrl,
         portraitUrl,
-        materialUrl,
         facePassedCount: (imgs || []).filter(i => i.face_passed && i.status !== "ai_rejected").length
       };
     },
@@ -453,7 +443,7 @@ async function fetchGallery(subId) {
     renderTaskMeta(currentSub);
 
     if (handler.hasRefImages) {
-      renderRefImages(portraitUrl, materialUrl, styleUrl);
+      renderRefImages(portraitUrl, styleUrl);
     } else {
       refImagesEl.style.display = "none";
     }
@@ -483,10 +473,9 @@ function renderTaskMeta(task) {
   `;
 }
 
-function renderRefImages(portraitUrl, materialUrl, taskStyleUrl) {
+function renderRefImages(portraitUrl, taskStyleUrl) {
   const cards = [];
   if (portraitUrl) cards.push({ url: portraitUrl, label: "人物参考" });
-  if (materialUrl) cards.push({ url: materialUrl, label: "素材原图" });
   if (taskStyleUrl && taskStyleUrl !== portraitUrl) cards.push({ url: taskStyleUrl, label: "风格参考" });
 
   if (!cards.length) { refImagesEl.style.display = "none"; return; }
@@ -641,8 +630,12 @@ async function confirmSelection() {
     if (pendingCount === 0) {
       taskCard.style.opacity = "0.4";
       taskCard.style.pointerEvents = "none";
-      setTimeout(() => { window.location.href = window.location.pathname + "?type=" + currentType; }, 800);
     }
+  }
+  // 无论 taskCard 是否存在，审核完成后都跳回首页
+  const pendingCount2 = images.filter(img => handler.rejectFilter(img)).length;
+  if (pendingCount2 === 0) {
+    setTimeout(() => { window.location.href = window.location.pathname + "?type=" + currentType; }, 800);
   }
 }
 
@@ -679,8 +672,12 @@ rejectAllBtn.addEventListener("click", async () => {
     if (pendingCount === 0) {
       taskCard.style.opacity = "0.4";
       taskCard.style.pointerEvents = "none";
-      setTimeout(() => { window.location.href = window.location.pathname + "?type=" + currentType; }, 800);
     }
+  }
+  // 无论 taskCard 是否存在，审核完成后都跳回首页
+  const pendingCountAfterReject = images.filter(img => handler.rejectFilter(img)).length;
+  if (pendingCountAfterReject === 0) {
+    setTimeout(() => { window.location.href = window.location.pathname + "?type=" + currentType; }, 800);
   }
 });
 
