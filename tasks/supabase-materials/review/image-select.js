@@ -344,9 +344,11 @@ function renderTaskList(tasks) {
       delBtn.textContent = "删除中...";
       try {
         if (task.contentType === "face" || task.type === "sub") {
-          await client.from("generated_images").delete().eq("sub_requirement_id", task.id);
+          // 先标删除，再删图片（避免删图成功但标记失败导致刷新后任务复现）
           await client.from("sub_requirement").update({ deleted_at: new Date().toISOString() }).eq("id", task.id);
+          await client.from("generated_images").delete().eq("sub_requirement_id", task.id);
         } else {
+          // nail 任务从 generated_images 动态聚合，删图即消失
           await client.from("generated_images").delete().eq("sub_requirement_id", task.id);
         }
         card.style.transition = "opacity 0.3s, transform 0.3s";
