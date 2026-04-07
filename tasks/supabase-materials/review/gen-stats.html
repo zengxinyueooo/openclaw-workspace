@@ -373,6 +373,20 @@ function renderTrend(rows, periods) {
   });
 }
 
+// ─── 错误类型可读标签 ──────────────────────────────────────────────────────────
+const ERROR_LABELS = {
+  no_face:        '无人脸',
+  content_safety: '内容安全拦截',
+  api_empty:      'API返回空图',
+  timeout:        '超时',
+  http_429:       '限流(429)',
+  http_500:       '服务错误(500)',
+  write_failed:   '写库失败',
+  workflow_error: '未知异常',
+  unknown:        '未分类',
+};
+function errorLabel(k) { return ERROR_LABELS[k] ? `${ERROR_LABELS[k]} (${k})` : k; }
+
 // ─── 错误分布 ─────────────────────────────────────────────────────────────────
 function renderErrorChart(rows) {
   const failed = rows.filter(r => !r.success);
@@ -381,8 +395,9 @@ function renderErrorChart(rows) {
     const k = r.error_type || 'unknown';
     map[k] = (map[k]||0) + 1;
   });
-  const labels = Object.keys(map);
-  const values = labels.map(k => map[k]);
+  const labels = Object.keys(map).map(k => errorLabel(k));
+  const keys = Object.keys(map);
+  const values = keys.map(k => map[k]);
   const colors = ['#f87171','#fb923c','#facc15','#a78bfa','#60a5fa','#34d399','#f472b6'];
 
   if (errorChart) errorChart.destroy();
@@ -476,7 +491,7 @@ function renderDetail(rows) {
       <td>${badge}</td>
       <td>${r.image_count != null ? r.image_count+'张' : '-'}</td>
       <td style="font-size:12px;color:var(--text-muted)">${r.duration_seconds != null ? r.duration_seconds+'s' : '-'}</td>
-      <td style="font-size:12px;color:var(--text-muted)">${r.error_type||'-'}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${r.error_type ? errorLabel(r.error_type) : '-'}</td>
     </tr>`;
   }).join('');
 }
