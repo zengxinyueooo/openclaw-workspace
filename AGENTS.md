@@ -94,7 +94,7 @@ Participate, don't dominate. Group chat behavior: see `docs/group-chat-guide.md`
 收到「执行账号常态化运营巡检」时：
 1. spawn 鹰眼执行巡检：
    ```
-   sessions_spawn(agentId="mcn-eagle", task="执行账号数据检查：查 note_analytics 表，检查所有账号（颜值+美甲）本周数据，若某账号本周浏览量>100的笔记数量<1，则标记为需要常态化运营", mode="run", runTimeoutSeconds=600)
+   sessions_spawn(agentId="mcn-eagle", task="执行颜值账号日巡检：按 AGENTS.md「颜值账号日巡检」流程，查 note_analytics 表检查所有颜值+美甲账号本周数据，命中账号创建 requirement + sub_requirement，最后 sessions_send(label='main') 汇报结果", mode="run", runTimeoutSeconds=600)
    ```
 2. `sessions_yield` 等待鹰眼结果
 3. 收到结果后，汇总为「有 xxx、xxx 等账号需要发布常态化运营笔记」，通过 announce 告知皮皮
