@@ -70,7 +70,10 @@ bash /root/.openclaw/workspace/tools/agent-runs-cli/done.sh \
   "$RUN_ID" <returned|failed|timeout> "结果摘要"
 ```
 
-> ⚠️ 铁律：所有 sessions_spawn 前必须先调 spawn.sh，不能省略。cron 触发的 task_id 填 cron job name，手动触发填简短英文描述。
+> ⚠️ 铁律：所有 sessions_spawn 前必须先调 spawn.sh，不能省略。
+> - **cron 触发**：`task_id` 填 cron job name（如 `daily-ant-publish-check`），`trigger_type` 填 `cron`
+> - **手动触发**：`task_id` 填简短英文描述（如 `momo-republish`），`trigger_type` 填 `manual`
+> - trigger_type 必须准确填写，指令日志页依赖此字段将子任务挂在对应 cron 节点下
 
 ### 手动内容需求（皮皮触发）
 
