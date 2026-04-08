@@ -133,6 +133,19 @@
     window.location.href = 'login.html';
   }
 
+  // 确保 nav.js 被加载（针对 CDN 缓存旧版 HTML 没引入 nav.js 的页面）
+  function ensureNavJs() {
+    if (document.querySelector('script[src*="nav.js"]')) return; // 已加载
+    var s = document.createElement('script');
+    var ts = Date.now();
+    s.src = (location.pathname.includes('/') ? location.pathname.replace(/\/[^/]*$/, '/') : './') + 'nav.js?v=' + ts;
+    s.onerror = function() {
+      // nav.js 加载失败时 fallback 到 patchNav
+      patchNav();
+    };
+    document.head.appendChild(s);
+  }
+
   // 补丁：给旧版硬编码导航栏注入缺失的链接
   // 必须在 DOMContentLoaded 后执行，确保 nav 已渲染
   function patchNav() {
@@ -175,6 +188,7 @@
       redirectToLogin();
       return;
     }
+    ensureNavJs();
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', function() {
         ensureUserBar();
@@ -197,6 +211,7 @@
       window.location.href = 'index.html';
       return;
     }
+    ensureNavJs();
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', function() {
         ensureUserBar();
