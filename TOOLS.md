@@ -83,13 +83,13 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 
 | 页面 | URL |
 |------|-----|
-| 素材审核 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/index.html |
-| 素材池 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/materials-pool.html |
-| 生图审核 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/image-select.html |
-| 草稿审核 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/draft-review.html |
-| 数据看板 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/dashboard.html |
-| 需求追踪 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/requirement.html |
-| 生图统计 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/gen-stats.html |
+| 素材审核 | https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/index.html |
+| 素材池 | https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/materials-pool.html |
+| 生图审核 | https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/image-select.html |
+| 草稿审核 | https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/draft-review.html |
+| 数据看板 | https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/dashboard.html |
+| 需求追踪 | https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/requirement.html |
+| 生图统计 | https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/gen-stats.html |
 
 - **部署命令**（在 `tasks/supabase-materials/review/` 目录下执行）：
   ```bash

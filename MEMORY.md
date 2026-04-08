@@ -73,12 +73,12 @@
 
 ## 关键链接
 
-- 生图审核: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/image-select.html
-- 素材审核: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/index.html
-- 草稿审核: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/draft-review.html
-- 看板: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/dashboard.html
-- 指令日志: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/command-log.html
-- 需求追踪: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/requirement.html
+- 生图审核: https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/image-select.html
+- 素材审核: https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/index.html
+- 草稿审核: https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/draft-review.html
+- 看板: https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/dashboard.html
+- 指令日志: https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/command-log.html
+- 需求追踪: https://mss.vip.sankuai.com/static-prod01/com.sankuai.dzfe3.opxaimanage/requirement.html
 - 部署: `webstatic deploy --appkey=com.sankuai.dzfe3.opxaimanage --artifact=. --env=prod --token=b70bdb0e-606d-46d3-9900-1a857f9cf1a2`（在 review/ 目录下）
 - 学城日记父目录: doc_id=2749362623
 - km CLI: source ~/.meituan-local-tools/.venv/bin/activate && km get/create/search
