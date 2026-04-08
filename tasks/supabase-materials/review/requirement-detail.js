@@ -41,13 +41,53 @@ document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(location.search);
   reqId = params.get('id');
   if (!reqId) {
-    showFatalError('缺少需求 ID，请从需求追踪页进入');
+    loadReqList();
     return;
   }
   loadData();
   // 每30秒自动刷新
   setInterval(loadData, 30000);
 });
+
+// ===== 需求选择列表（无 id 时显示） =====
+async function loadReqList() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('reqOverview').style.display = 'none';
+  document.getElementById('progressSummary').style.display = 'none';
+  document.getElementById('filterTabs').parentElement.style.display = 'none';
+
+  const { data, error } = await sb
+    .from('requirement')
+    .select('id, description, scene_type, status, created_at, start_time, end_time')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  const grid = document.getElementById('subReqGrid');
+  if (error || !data || data.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p>暂无需求数据</p></div>`;
+    return;
+  }
+
+  const SCENE = { lowfans: '低粉爆款', normal: '常态化', hot: '热点追踪' };
+  const STAT_CLS = { pending: 'warning', in_progress: 'accent', done: 'success', success: 'success', obsolete: 'muted' };
+
+  grid.innerHTML = `
+    <div class="req-list-title">选择一个需求查看详情</div>
+    ${data.map(r => `
+      <a href="requirement-detail.html?id=${r.id}" class="req-list-card">
+        <div class="req-list-left">
+          <div class="req-list-scene">${SCENE[r.scene_type] || r.scene_type || '未知'}</div>
+          <div class="req-list-desc">${escapeHtml(r.description || '无描述')}</div>
+          <div class="req-list-time">🕐 ${formatTime(r.created_at)}</div>
+        </div>
+        <div class="req-list-right">
+          <span class="badge ${STAT_CLS[r.status] || 'muted'}">${STATUS_TEXT[r.status] || r.status}</span>
+          <span class="req-list-arrow">→</span>
+        </div>
+      </a>
+    `).join('')}
+  `;
+}
 
 // ===== 数据加载 =====
 async function loadData() {

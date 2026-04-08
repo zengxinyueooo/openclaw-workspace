@@ -178,19 +178,19 @@ button {
 }
 
 .undo {
-  background: rgba(148, 163, 184, 0.1);
-  color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
   font-size: 14px !important;
   padding: 14px 10px !important;
   white-space: nowrap;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, background 0.2s;
 }
 
 .undo:not(:disabled):hover {
-  background: rgba(148, 163, 184, 0.2);
-  color: #e2e8f0;
+  background: rgba(251, 191, 36, 0.25);
+  color: #fde68a;
 }
 
 .badge {

@@ -260,8 +260,17 @@ async function fetchPending() {
 function updateUndoButton() {
   const btn = document.getElementById("btn-undo");
   if (!btn) return;
-  btn.disabled = actionHistory.length === 0;
-  btn.style.opacity = actionHistory.length === 0 ? "0.3" : "1";
+  if (actionHistory.length === 0) {
+    btn.disabled = true;
+    btn.style.opacity = "0.3";
+    btn.style.cursor = "not-allowed";
+    btn.style.pointerEvents = "none";
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = "1";
+    btn.style.cursor = "pointer";
+    btn.style.pointerEvents = "";
+  }
 }
 
 async function updateStatus(newStatus) {
@@ -486,5 +495,6 @@ if (urlInput.value && keyInput.value) {
   fetchPending();
 } else {
   setStatus("请填写 Supabase 连接信息");
+  updateUndoButton();
   renderCard();
 }

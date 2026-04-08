@@ -581,6 +581,75 @@ a.pipeline-step-link .pipeline-step:hover {
   opacity: 0.5;
 }
 
+/* ===== 需求选择列表 ===== */
+.req-list-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: var(--space-2) 0 var(--space-4);
+}
+
+.req-list-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.req-list-card:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
+  transform: translateX(4px);
+}
+
+.req-list-left { flex: 1; min-width: 0; }
+
+.req-list-scene {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.req-list-desc {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.req-list-time {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.req-list-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.req-list-arrow {
+  color: var(--text-muted);
+  font-size: 1.125rem;
+  transition: transform var(--transition-fast);
+}
+
+.req-list-card:hover .req-list-arrow {
+  transform: translateX(4px);
+  color: var(--accent);
+}
+
 /* ===== 响应式 ===== */
 @media (max-width: 768px) {
   .pipeline-row {
