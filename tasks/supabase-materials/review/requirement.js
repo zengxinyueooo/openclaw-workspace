@@ -3,6 +3,15 @@
  * 需求 → 子需求 → 草稿 → 发布 全流程追踪
  */
 
+// 动态加载共享导航栏（兼容旧版HTML没有引用nav.js的情况）
+(function() {
+  if (!document.querySelector('script[src*="nav.js"]')) {
+    var s = document.createElement('script');
+    s.src = 'nav.js?v=20260408e';
+    document.head.appendChild(s);
+  }
+})();
+
 // 初始化 Supabase
 const sb = supabase.createClient(
   window.SUPABASE_DEFAULTS.url,
