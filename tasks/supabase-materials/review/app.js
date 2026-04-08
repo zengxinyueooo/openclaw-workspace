@@ -12,6 +12,7 @@ let maxMoveDistance = 0;
 let blockClick = false;
 let actionLocked = false;
 let currentBatchId = null;
+let actionHistory = []; // [{item, status, insertedAt}]
 
 const statusEl = document.getElementById("status");
 const connectBtn = document.getElementById("connect");
@@ -250,8 +251,17 @@ async function fetchPending() {
   currentIndex = 0;
   approvedCount = 0;
   rejectedCount = 0;
+  actionHistory = [];
+  updateUndoButton();
   setStatus(`已加载 ${materials.length} 条`);
   renderCard();
+}
+
+function updateUndoButton() {
+  const btn = document.getElementById("btn-undo");
+  if (!btn) return;
+  btn.disabled = actionHistory.length === 0;
+  btn.style.opacity = actionHistory.length === 0 ? "0.3" : "1";
 }
 
 async function updateStatus(newStatus) {
@@ -269,6 +279,11 @@ async function updateStatus(newStatus) {
     return;
   }
 
+  // 记录操作历史（只保留最近 10 步）
+  actionHistory.push({ item, status: newStatus, insertedAt: currentIndex });
+  if (actionHistory.length > 10) actionHistory.shift();
+  updateUndoButton();
+
   if (newStatus === "approved") {
     approvedCount += 1;
   } else {
@@ -280,6 +295,46 @@ async function updateStatus(newStatus) {
   }
   setStatus("已保存");
   renderCard();
+}
+
+async function undoLast() {
+  if (actionLocked || actionHistory.length === 0) return;
+  actionLocked = true;
+  const { item, status, insertedAt } = actionHistory.pop();
+  setStatus("正在撤回...");
+
+  const { error } = await client
+    .from("materials")
+    .update({ status: "pending", reviewed_at: null })
+    .eq("id", item.id);
+
+  if (error) {
+    setStatus(`撤回失败：${error.message}`);
+    actionHistory.push({ item, status, insertedAt }); // 恢复
+    actionLocked = false;
+    updateUndoButton();
+    return;
+  }
+
+  // 恢复计数
+  if (status === "approved") approvedCount = Math.max(0, approvedCount - 1);
+  else rejectedCount = Math.max(0, rejectedCount - 1);
+
+  // 把 item 插回原位
+  const insertPos = Math.min(insertedAt, materials.length);
+  materials.splice(insertPos, 0, item);
+  currentIndex = insertPos;
+
+  // 如果完成屏正在显示，切回审核界面
+  if (doneScreen.style.display !== "none") {
+    doneScreen.style.display = "none";
+    showReviewUI(true);
+  }
+
+  updateUndoButton();
+  setStatus("已撤回");
+  renderCard();
+  actionLocked = false;
 }
 
 async function animateAndUpdate(newStatus, direction) {
@@ -385,6 +440,11 @@ lightboxClose.addEventListener("click", () => {
 
 approveBtn.addEventListener("click", () => animateAndUpdate("approved", 1));
 rejectBtn.addEventListener("click", () => animateAndUpdate("rejected", -1));
+
+const undoBtn = document.getElementById("btn-undo");
+if (undoBtn) {
+  undoBtn.addEventListener("click", undoLast);
+}
 
 btnBack.addEventListener("click", () => {
   window.location.href = window.location.pathname;
