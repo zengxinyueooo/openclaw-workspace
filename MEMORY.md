@@ -83,6 +83,14 @@
 - 学城日记父目录: doc_id=2749362623
 - km CLI: source ~/.meituan-local-tools/.venv/bin/activate && km get/create/search
 
+## Git / SSH 铁律（沙箱环境）
+
+- **沙箱 SSH 密钥**：`~/.ssh/id_ed25519`（标识：`openclaw-sandbox`），用 `ssh-keygen -t ed25519 -C 'openclaw-sandbox' -f ~/.ssh/id_ed25519` 生成
+- **公钥需添加到美团 Code**：`https://dev.sankuai.com/code/home` → 右上角 → SSH Key
+- **所有 git 操作统一使用 SSH URL 格式**：`ssh://git@git.sankuai.com/~lipengyu04/<repo>.git`（不用 HTTPS，不用 SCP 风格）
+- **跳板机配置**：`~/.ssh/ssh_config_jumper`，用户名 `zengxinyue04`，`git.sankuai.com` 需经 `ProxyJump jumper.sankuai.com`
+- **记忆点**：每次新 session 后直接检查 `~/.ssh/id_ed25519` 是否存在，不存在就重新生成并提示皮皮添加公钥
+
 ## 系统长期待修项（皮皮介入）
 
 > 记录需要皮皮手动处理、非子 agent 能自行解决的系统性问题
