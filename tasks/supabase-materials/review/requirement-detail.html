@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>需求详情</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="shared.css">
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>Auth.requireLogin();</script>
+  <link rel="stylesheet" href="requirement-detail.css">
+</head>
+<body>
+
+<nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;">
+  <a href="requirement.html" style="color:#94a3b8;text-decoration:none;">需求追踪</a>
+  <a href="index.html" style="color:#94a3b8;text-decoration:none;">素材审核</a>
+  <a href="materials-pool.html" style="color:#94a3b8;text-decoration:none;">素材池</a>
+  <a href="image-select.html" style="color:#94a3b8;text-decoration:none;">生图审核</a>
+  <a href="gen-stats.html" style="color:#94a3b8;text-decoration:none;">生图统计</a>
+  <a href="draft-review.html" style="color:#94a3b8;text-decoration:none;">草稿审核</a>
+  <a href="dashboard.html" style="color:#94a3b8;text-decoration:none;">数据看板</a>
+  <a href="tasks.html" style="color:#94a3b8;text-decoration:none;">任务看板</a>
+  <a href="command-log.html" style="color:#94a3b8;text-decoration:none;">指令日志</a>
+  <a href="user-manage.html" style="color:#94a3b8;text-decoration:none;">用户管理</a>
+</nav>
+<script>
+(function(){
+  var u = localStorage.getItem('mcn_current_user');
+  if(u) document.getElementById('mcn-nav').style.display='flex';
+  var links = document.querySelectorAll('#mcn-nav a');
+  var path = location.pathname.split('/').pop() || 'index.html';
+  links.forEach(function(a){
+    if(a.getAttribute('href') === path || (path.startsWith('requirement-detail') && a.getAttribute('href') === 'requirement.html')){
+      a.style.color='#6366f1';
+      a.style.fontWeight='600';
+    }
+    a.addEventListener('mouseover',function(){this.style.color='#e2e8f0';});
+    a.addEventListener('mouseout',function(){
+      if(this.getAttribute('href')==='requirement.html' && path.startsWith('requirement-detail')){this.style.color='#6366f1';}
+      else if(this.getAttribute('href')===path){this.style.color='#6366f1';}
+      else{this.style.color='#94a3b8';}
+    });
+  });
+})();
+</script>
+
+<div class="app">
+
+  <!-- 顶栏 -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <a href="requirement.html" class="back-btn">← 返回需求列表</a>
+    </div>
+    <button class="ghost" onclick="loadData()">🔄 刷新</button>
+  </div>
+
+  <!-- 需求概览 -->
+  <div id="reqOverview" class="req-overview skeleton-block">
+    <div class="skeleton-line" style="width:40%;height:14px;"></div>
+    <div class="skeleton-line" style="width:70%;height:22px;margin-top:10px;"></div>
+    <div class="skeleton-line" style="width:50%;height:14px;margin-top:8px;"></div>
+  </div>
+
+  <!-- 进度汇总 -->
+  <div id="progressSummary" class="progress-summary"></div>
+
+  <!-- 筛选栏 -->
+  <div class="filter-bar">
+    <div class="filter-tabs" id="filterTabs">
+      <button class="filter-tab active" data-status="all" onclick="filterByStatus('all')">全部</button>
+      <button class="filter-tab" data-status="pending" onclick="filterByStatus('pending')">待处理</button>
+      <button class="filter-tab" data-status="in_progress" onclick="filterByStatus('in_progress')">进行中</button>
+      <button class="filter-tab" data-status="success" onclick="filterByStatus('success')">已完成</button>
+      <button class="filter-tab" data-status="error" onclick="filterByStatus('error')">有错误</button>
+      <button class="filter-tab" data-status="obsolete" onclick="filterByStatus('obsolete')">已归档</button>
+    </div>
+    <div class="filter-right">
+      <span id="subCountLabel" class="count-label"></span>
+    </div>
+  </div>
+
+  <!-- 子需求流水线表格 -->
+  <div id="subReqGrid" class="sub-req-grid"></div>
+
+  <!-- Loading -->
+  <div id="loading" class="empty-state">
+    <div class="empty-state-icon">⏳</div>
+    <p>加载中...</p>
+  </div>
+
+</div>
+
+<script src="requirement-detail.js"></script>
+</body>
+</html>

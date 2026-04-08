@@ -197,6 +197,7 @@ function renderRequirementCard(req) {
           </div>
         </div>
         <div class="req-header-right">
+          <a href="requirement-detail.html?id=${req.id}" class="detail-btn" onclick="event.stopPropagation()" title="查看子需求详情">📊 详情</a>
           <span class="status-badge ${req.status}">${STATUS_TEXT[req.status] || req.status}</span>
           <span class="expand-icon">▼</span>
         </div>

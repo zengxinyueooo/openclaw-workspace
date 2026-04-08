@@ -79,36 +79,31 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 - **返回**：`{"code":0,"data":{"url":"https://..."}}`
 - **适用场景**：素材图片上传后存 URL 到 Supabase materials 表，国内无需 VPN 即可访问
 
-### Vercel（主力）
+### WebStatic（主力，美团内网）
 
 | 页面 | URL |
 |------|-----|
-| 素材审核 | https://review-gold-seven.vercel.app/index.html |
-| 素材池 | https://review-gold-seven.vercel.app/materials-pool.html |
-| 生图审核 | https://review-gold-seven.vercel.app/image-select.html |
-| 草稿审核 | https://review-gold-seven.vercel.app/draft-review.html |
-| 数据看板 | https://review-gold-seven.vercel.app/dashboard.html |
+| 素材审核 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/index.html |
+| 素材池 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/materials-pool.html |
+| 生图审核 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/image-select.html |
+| 草稿审核 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/draft-review.html |
+| 数据看板 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/dashboard.html |
+| 需求追踪 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/requirement.html |
+| 生图统计 | https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/gen-stats.html |
 
-- **部署命令**：
+- **部署命令**（在 `tasks/supabase-materials/review/` 目录下执行）：
   ```bash
-  cd tasks/supabase-materials/review && npx vercel@32 --yes --prod --token <VERCEL_TOKEN>
+  webstatic deploy --appkey=com.sankuai.dzfe3.opxaimanage --artifact=. --env=prod --token=b70bdb0e-606d-46d3-9900-1a857f9cf1a2
   ```
+- **Token**：`b70bdb0e-606d-46d3-9900-1a857f9cf1a2`（Deploy Token，仅限本项目）
+- **控制台**：https://webstatic.mws.sankuai.com/project/com.sankuai.dzfe3.opxaimanage
+- **部署流程**：改文件（`tasks/supabase-materials/review/`）→ 跑 deploy 命令，完成
+- **不再使用**：Vercel、Netlify、本地 8080 server
 
-### 审核页本地 HTTP Server
+### Vercel / Netlify（已废弃）
 
-- **⚠️ 铁律**：所有页面文件必须写到 `/mnt/openclaw/mcn-review/`，这是 server 实际 serve 的目录
-- `/root/mcn-review/` 是旧残留目录，不要改它，server 重启后不再指向它
-- **重启 server**：`bash /root/.openclaw/scripts/start-review-server.sh`
-- **部署流程**：改文件 → 写到 `/mnt/openclaw/mcn-review/` → 同步到 `tasks/supabase-materials/review/` → vercel 部署
-
-### Netlify 站点（备用，额度已满）
-
-| 站点 | Site ID | URL |
-|------|---------|-----|
-| 素材审核页 | `b5e35f70-01a3-4026-90d6-5fbb7e344415` | https://pipi-material-review.netlify.app |
-| 蜜蜂预览页 | `2a26449e-eedb-42db-9e6d-639adb17ecd0` | https://pipi-bee-preview.netlify.app |
-
-- **Token**：`.env.supabase` 中 `NETLIFY_AUTH_TOKEN`
+- Vercel token 在 `.env.supabase` 中 `VERCEL_TOKEN`，不再使用
+- Netlify 额度已满，不再使用
 
 ---
 

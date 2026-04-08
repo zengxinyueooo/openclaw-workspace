@@ -73,11 +73,13 @@
 
 ## 关键链接
 
-- 生图审核: https://review-gold-seven.vercel.app/image-select.html
-- 素材审核: https://review-gold-seven.vercel.app/
-- 草稿审核: https://review-gold-seven.vercel.app/draft-review.html
-- 看板: https://review-gold-seven.vercel.app/dashboard.html
-- 指令日志: https://review-gold-seven.vercel.app/command-log.html
+- 生图审核: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/image-select.html
+- 素材审核: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/index.html
+- 草稿审核: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/draft-review.html
+- 看板: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/dashboard.html
+- 指令日志: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/command-log.html
+- 需求追踪: https://s1.meituan.net/static-prod01/com.sankuai.dzfe3.opxaimanage/requirement.html
+- 部署: `webstatic deploy --appkey=com.sankuai.dzfe3.opxaimanage --artifact=. --env=prod --token=b70bdb0e-606d-46d3-9900-1a857f9cf1a2`（在 review/ 目录下）
 - 学城日记父目录: doc_id=2749362623
 - km CLI: source ~/.meituan-local-tools/.venv/bin/activate && km get/create/search
 
@@ -94,6 +96,7 @@
 | ZHIPU_API_KEY 未配置，AI 打标停摆 | 🟡 素材评分全为50 | 2026-04-04 | **待修** |
 | 云真机 b46ba349/bb621562 GUI Agent 守护进程异常 | 🟡 影响数据回收 | 2026-04-05 | **待修** |
 | 云真机多台设备持续 300404 | 🟡 数据回收成功率低 | 2026-04-04 | **持续** |
+| 松鼠 CDP Runtime/Page 域不可用（Chrome `--test-type` 参数影响） | 🔴 素材采集链路完全阻塞 | 2026-04-07 | **待修** |
 
 ## 本周技术沉淀（2026-03-30 ~ 2026-04-05）
 
