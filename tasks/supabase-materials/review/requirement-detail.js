@@ -40,7 +40,7 @@ let reqId = null;
 document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(location.search);
   reqId = params.get('id');
-  if (!reqId) {
+  if (!reqId || reqId === 'null' || reqId === 'undefined') {
     loadReqList();
     return;
   }
