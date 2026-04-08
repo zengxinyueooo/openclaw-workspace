@@ -535,11 +535,10 @@ function closeConfirm() {
 }
 
 async function doDelete() {
+  const ids = [...pendingDeleteIds]; // 先保存，再关弹窗（closeConfirm 会清空 pendingDeleteIds）
   closeConfirm();
-  if (!pendingDeleteIds.length) return;
+  if (!ids.length) return;
   showLoading(true);
-  const ids = pendingDeleteIds;
-  pendingDeleteIds = [];
 
   const { error } = await sb.from('available_materials')
     .delete()
