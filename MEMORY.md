@@ -22,6 +22,24 @@
 | 新增猫头鹰🦉数据分析 agent | ✅ 2026-03-17 |
 | 蚂蚁职责拆分：数据→猫头鹰，发布+评论→蚂蚁 | ✅ 2026-03-17 |
 
+## agent_runs 写入铁律（2026-04-08 新增）
+
+所有 `sessions_spawn` 前后必须调用 `agent-runs-cli`：
+
+```bash
+# spawn 前
+RUN_ID=$(bash /root/.openclaw/workspace/tools/agent-runs-cli/spawn.sh \
+  <child_agent_id> <task_id> <manual|cron> "任务摘要")
+
+# 收到回报后
+bash /root/.openclaw/workspace/tools/agent-runs-cli/done.sh \
+  "$RUN_ID" <returned|failed|timeout> "结果摘要"
+```
+
+- cron 触发：`task_id` = cron job name（如 `daily-ant-publish-check`），`trigger_type=cron`
+- 手动触发：`task_id` = 简短英文描述（如 `bee-note-gen`），`trigger_type=manual`
+- 超时/失败：`done.sh` 填 `timeout` 或 `failed`，不能不调
+
 ## 调度铁律
 
 - cron payload 只写一句话触发，详细执行规则写在对应 agent 的 `AGENTS.md`
