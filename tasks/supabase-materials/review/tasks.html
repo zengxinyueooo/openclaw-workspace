@@ -648,13 +648,24 @@ function render() {
   }).join('');
 }
 
-// agent_runs 表已停用 (2026-03-30)，任务看板暂无可用数据源
 async function loadTasks() {
-  // 已停用：不再从 agent_runs 读取数据
-  allTasks = [];
-  render();
-  document.getElementById('lastUpdate').textContent =
-    '最后更新: ' + new Date().toLocaleTimeString('zh-CN') + ' (agent_runs 已停用)';
+  try {
+    const { data, error } = await sb
+      .from('agent_runs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    if (error) throw error;
+    allTasks = data || [];
+    render();
+    document.getElementById('lastUpdate').textContent =
+      '最后更新: ' + new Date().toLocaleTimeString('zh-CN') + ' · ' + allTasks.length + ' 条记录';
+  } catch (e) {
+    console.error(e);
+    document.getElementById('lastUpdate').textContent = '加载失败: ' + e.message;
+    allTasks = [];
+    render();
+  }
 }
 
 loadTasks();

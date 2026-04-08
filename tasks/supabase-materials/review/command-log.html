@@ -8,12 +8,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MCN 动物团 · 指令日志</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=202604081554"></script>
-<script src="auth.js?v=202604081554"></script>
+<script src="config.js?v=202604082053"></script>
+<script src="auth.js?v=202604082053"></script>
 <script>
   Auth.requireLogin();
 </script>
-<link rel="stylesheet" href="shared.css?v=202604081554">
+<link rel="stylesheet" href="shared.css?v=202604082053">
 <style>
 /* Page-specific styles */
 .log-filters {
@@ -174,7 +174,7 @@
 </head>
 <body>
 <nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;"></nav>
-<script src="nav.js?v=202604081554c"></script>
+<script src="nav.js?v=202604082053c"></script>
 
 <div class="app">
   <div class="topbar">
@@ -288,10 +288,71 @@ async function init() {
 }
 
 async function loadTasks() {
-  // agent_runs 已停用，显示空状态
-  document.getElementById('connStatus').className = 'status';
-  document.getElementById('connStatus').innerHTML = '<span>agent_runs 已停用 (2026-03-30)</span>';
-  allTasks = [];
+  try {
+    // 1. 拉 cron_runs（最近100条）
+    const { data: cronRows, error: cronErr } = await sb
+      .from('cron_runs')
+      .select('*')
+      .order('started_at', { ascending: false })
+      .limit(100);
+    if (cronErr) throw cronErr;
+
+    // 2. 拉 agent_runs（最近200条）
+    const { data: agentRows, error: agentErr } = await sb
+      .from('agent_runs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (agentErr) throw agentErr;
+
+    // 3. 合并：cron 触发的 agent_runs 挂在对应 cron 节点下
+    //    匹配规则：agent_run.trigger_type=cron 且 task_id=cron_name 且时间差 ≤ 10min
+    const cronNodes = (cronRows || []).map(c => ({
+      _type: 'cron',
+      id: c.id,
+      cron_name: c.cron_name,
+      agent_id: c.agent_id,
+      trigger_type: 'cron',
+      status: c.status === 'ok' ? 'returned' : 'failed',
+      result_summary: c.summary,
+      created_at: c.started_at,
+      finished_at: c.finished_at,
+      children: []
+    }));
+
+    const orphanAgentRuns = [];
+    (agentRows || []).forEach(ar => {
+      if (ar.trigger_type === 'cron') {
+        // 找匹配的 cron 节点（task_id=cron_name，时间差 ≤ 10min）
+        const arTime = new Date(ar.created_at).getTime();
+        const match = cronNodes.find(c =>
+          c.cron_name === ar.task_id &&
+          Math.abs(new Date(c.created_at).getTime() - arTime) <= 10 * 60 * 1000
+        );
+        if (match) {
+          match.children.push(ar);
+          return;
+        }
+      }
+      orphanAgentRuns.push(ar);
+    });
+
+    // 4. 合并成统一时间线，按时间降序
+    const merged = [
+      ...cronNodes,
+      ...orphanAgentRuns.map(ar => ({ _type: 'agent', ...ar }))
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    allTasks = merged;
+
+    document.getElementById('connStatus').className = 'status success';
+    document.getElementById('connStatus').innerHTML = '<span>● 已连接</span>';
+  } catch (e) {
+    console.error(e);
+    document.getElementById('connStatus').className = 'status error';
+    document.getElementById('connStatus').innerHTML = `<span>加载失败: ${e.message}</span>`;
+    allTasks = [];
+  }
   updateStats();
   renderTimeline();
 }
@@ -317,18 +378,24 @@ function getFiltered() {
         return t.status === currentFilter;
       });
     } else {
-      // Filter by agent short name
-      list = list.filter(t => agentShortName(t.child_agent_id) === currentFilter);
+      // 按 agent 过滤：cron 节点用 agent_id，agent 节点用 child_agent_id
+      list = list.filter(t => {
+        const agId = t._type === 'cron'
+          ? agentShortName(t.agent_id)
+          : agentShortName(t.child_agent_id);
+        return agId === currentFilter;
+      });
     }
   }
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     list = list.filter(t =>
       (t.task_id||'').toLowerCase().includes(q) ||
+      (t.cron_name||'').toLowerCase().includes(q) ||
       (t.result_summary||'').toLowerCase().includes(q) ||
       (t.error_reason||'').toLowerCase().includes(q) ||
       (t.child_agent_id||'').toLowerCase().includes(q) ||
-      (t.parent_agent_id||'').toLowerCase().includes(q)
+      (t.agent_id||'').toLowerCase().includes(q)
     );
   }
   return list;
@@ -354,6 +421,82 @@ function formatDuration(start, end) {
   if (ms < 3600000) return Math.floor(ms/60000) + 'm ' + Math.round((ms%60000)/1000) + 's';
   return Math.floor(ms/3600000) + 'h ' + Math.floor((ms%3600000)/60000) + 'm';
 }
+function renderAgentRow(ar, indent) {
+  const agent = AGENT_MAP[ar.child_agent_id] || { emoji:'❓', name: ar.child_agent_id||'未知', color:'#64748b', cls:'' };
+  const st = STATUS_MAP[ar.status] || { label: ar.status, cls: 'pending' };
+  const dur = formatDuration(ar.started_at || ar.created_at, ar.finished_at);
+  let resultHtml = '';
+  if (ar.result_summary) resultHtml = `<div class="log-result">${escHtml(ar.result_summary)}</div>`;
+  if (ar.error_reason) resultHtml = `<div class="log-result error-result">${escHtml(ar.error_reason)}</div>`;
+  const indentStyle = indent ? 'margin-left:28px;' : '';
+  const prefix = indent ? '└─ ' : '';
+  return `
+    <div class="log-entry" style="${indentStyle}">
+      <div class="log-dot ${st.cls}"></div>
+      <div class="log-card">
+        <div class="log-header">
+          <div class="log-title">${escHtml(prefix + (ar.task_id || '(无标题)'))}</div>
+          <div class="log-meta">
+            <span class="agent-tag ${agent.cls||''}">${agent.emoji} ${agent.name}</span>
+            <span class="badge ${st.cls === 'done' ? 'success' : st.cls === 'failed' ? 'danger' : 'warning'}">${st.label}</span>
+            ${dur ? `<span class="log-duration">⏱ ${dur}</span>` : ''}
+          </div>
+        </div>
+        ${resultHtml}
+        <div class="log-meta" style="margin-top:var(--space-3)">
+          <span class="log-time">📅 ${formatTime(ar.created_at)}</span>
+          <span style="opacity:.4">${(ar.id||'').slice(0,8)}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderCronRow(t) {
+  const agent = AGENT_MAP[t.agent_id] || { emoji:'⏰', name: t.agent_id||'定时', color:'#64748b', cls:'' };
+  const st = STATUS_MAP[t.status] || { label: t.status, cls: 'pending' };
+  const dur = formatDuration(t.created_at, t.finished_at);
+  const childCount = (t.children||[]).length;
+  const hasChildren = childCount > 0;
+  const childrenId = 'cron-children-' + t.id;
+  let resultHtml = t.result_summary ? `<div class="log-result">${escHtml(t.result_summary)}</div>` : '';
+  const expandBtn = hasChildren
+    ? `<button onclick="toggleChildren('${childrenId}')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);padding:2px 8px;font-size:11px;cursor:pointer;margin-left:6px">
+        ▾ ${childCount} 个子任务
+      </button>`
+    : '';
+  const childrenHtml = hasChildren
+    ? `<div id="${childrenId}" style="margin-top:8px">
+        ${t.children.map(ar => renderAgentRow(ar, true)).join('')}
+      </div>`
+    : '';
+  return `
+    <div class="log-entry">
+      <div class="log-dot ${st.cls}"></div>
+      <div class="log-card" style="border-left:3px solid var(--accent)">
+        <div class="log-header">
+          <div class="log-title">⏰ ${escHtml(t.cron_name || '(cron)')}${expandBtn}</div>
+          <div class="log-meta">
+            <span class="agent-tag ${agent.cls||''}">${agent.emoji} ${agent.name}</span>
+            <span class="badge ${st.cls === 'done' ? 'success' : st.cls === 'failed' ? 'danger' : 'warning'}">${st.label}</span>
+            ${dur ? `<span class="log-duration">⏱ ${dur}</span>` : ''}
+          </div>
+        </div>
+        ${resultHtml}
+        <div class="log-meta" style="margin-top:var(--space-3)">
+          <span class="log-time">📅 ${formatTime(t.created_at)}</span>
+          <span style="opacity:.4">${(t.id||'').slice(0,8)}</span>
+        </div>
+        ${childrenHtml}
+      </div>
+    </div>`;
+}
+
+function toggleChildren(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
 function renderTimeline() {
   const filtered = getFiltered();
   const shown = filtered.slice(0, (page + 1) * PAGE_SIZE);
@@ -364,39 +507,8 @@ function renderTimeline() {
     return;
   }
   tl.innerHTML = shown.map(t => {
-    const agent = AGENT_MAP[t.child_agent_id] || { emoji:'❓', name: t.child_agent_id||'未知', color:'#64748b', cls:'' };
-    const st = STATUS_MAP[t.status] || { label: t.status, cls: 'pending' };
-    const dur = formatDuration(t.started_at || t.created_at, t.finished_at);
-    let resultHtml = '';
-    if (t.result_summary) {
-      resultHtml = `<div class="log-result">${escHtml(t.result_summary)}</div>`;
-    }
-    if (t.error_reason) {
-      resultHtml = `<div class="log-result error-result">${escHtml(t.error_reason)}</div>`;
-    }
-    const triggerTag = t.trigger_type ? `<span style="opacity:.6">触发: ${escHtml(t.trigger_type)}</span>` : '';
-    const parentTag = t.parent_agent_id ? `<span style="opacity:.6">调度: ${escHtml(t.parent_agent_id)}</span>` : '';
-    return `
-      <div class="log-entry">
-        <div class="log-dot ${st.cls}"></div>
-        <div class="log-card">
-          <div class="log-header">
-            <div class="log-title">${escHtml(t.task_id || '(无标题)')}</div>
-            <div class="log-meta">
-              <span class="agent-tag ${agent.cls||''}">${agent.emoji} ${agent.name}</span>
-              <span class="badge ${st.cls === 'done' ? 'success' : st.cls === 'failed' ? 'danger' : 'warning'}">${st.label}</span>
-              ${dur ? `<span class="log-duration">⏱ ${dur}</span>` : ''}
-            </div>
-          </div>
-          ${resultHtml}
-          <div class="log-meta" style="margin-top:var(--space-3)">
-            <span class="log-time">📅 ${formatTime(t.created_at)}</span>
-            ${triggerTag}
-            ${parentTag}
-            <span class="log-time" style="opacity:.4">${(t.id||'').slice(0,8)}</span>
-          </div>
-        </div>
-      </div>`;
+    if (t._type === 'cron') return renderCronRow(t);
+    return renderAgentRow(t, false);
   }).join('');
 
   const lm = document.getElementById('loadMore');

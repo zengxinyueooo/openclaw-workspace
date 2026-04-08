@@ -54,23 +54,10 @@ Participate, don't dominate. Group chat behavior: see `docs/group-chat-guide.md`
 10. **cron payload 只写一句话触发，详细规则写在 agent 的 AGENTS.md 里**
 
 ### 派活流程
-1. **spawn 前**：调 `agent-runs-cli/spawn.sh` 写一条 status=spawned 记录，拿到 `RUN_ID`
-2. `sessions_spawn` 派活给对应 agent
-3. agent 读自己的 AGENTS.md → 找到 skill → 执行
-4. **收到子 agent 回报后**：调 `agent-runs-cli/done.sh $RUN_ID returned "摘要"` 更新记录
-5. 转述给皮皮
-
-```bash
-# spawn 前（记录任务开始）
-RUN_ID=$(bash /root/.openclaw/workspace/tools/agent-runs-cli/spawn.sh \
-  <child_agent_id> <task_id> <manual|cron> "任务摘要")
-
-# 收到回报后（记录任务结束）
-bash /root/.openclaw/workspace/tools/agent-runs-cli/done.sh \
-  "$RUN_ID" <returned|failed|timeout> "结果摘要"
-```
-
-> ⚠️ 铁律：所有 sessions_spawn 前必须先调 spawn.sh，不能省略。cron 触发的 task_id 填 cron job name，手动触发填简短英文描述。
+1. sessions_spawn 派活给对应 agent
+2. agent 读自己的 AGENTS.md → 找到 skill → 执行
+3. 结果从 announce queue 回来，或手动查日志
+4. 转述给皮皮
 
 ### 手动内容需求（皮皮触发）
 
