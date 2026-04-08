@@ -170,39 +170,8 @@
 </style>
 </head>
 <body>
-<nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;">
-  <a href="requirement.html" style="color:#94a3b8;text-decoration:none;">需求追踪</a>
-  <a href="requirement-detail.html" style="color:#94a3b8;text-decoration:none;">需求详情</a>
-  <a href="index.html" style="color:#94a3b8;text-decoration:none;">素材审核</a>
-  <a href="materials-pool.html" style="color:#94a3b8;text-decoration:none;">素材池</a>
-  <a href="image-select.html" style="color:#94a3b8;text-decoration:none;">生图审核</a>
-  <a href="gen-stats.html" style="color:#94a3b8;text-decoration:none;">生图统计</a>
-  <a href="draft-review.html" style="color:#94a3b8;text-decoration:none;">草稿审核</a>
-  <a href="dashboard.html" style="color:#94a3b8;text-decoration:none;">数据看板</a>
-  <a href="tasks.html" style="color:#94a3b8;text-decoration:none;">任务看板</a>
-  <a href="command-log.html" style="color:#94a3b8;text-decoration:none;">指令日志</a>
-  <a href="user-manage.html" style="color:#94a3b8;text-decoration:none;">用户管理</a>
-</nav>
-<script>
-(function(){
-  var u = localStorage.getItem('mcn_current_user');
-  if(u) document.getElementById('mcn-nav').style.display='flex';
-  // highlight current page
-  var links = document.querySelectorAll('#mcn-nav a');
-  var path = location.pathname.split('/').pop() || 'index.html';
-  links.forEach(function(a){
-    if(a.getAttribute('href') === path){
-      a.style.color='#6366f1';
-      a.style.fontWeight='600';
-    }
-    a.addEventListener('mouseover',function(){this.style.color='#e2e8f0';});
-    a.addEventListener('mouseout',function(){
-      if(this.getAttribute('href')===path){this.style.color='#6366f1';}
-      else{this.style.color='#94a3b8';}
-    });
-  });
-})();
-</script>
+<nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;"></nav>
+<script src="nav.js?v=20260408"></script>
 
 <div class="app">
   <div class="topbar">
