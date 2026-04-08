@@ -133,6 +133,42 @@
     window.location.href = 'login.html';
   }
 
+  // 补丁：给旧版硬编码导航栏注入缺失的链接
+  // 必须在 DOMContentLoaded 后执行，确保 nav 已渲染
+  function patchNav() {
+    var EXTRA_LINKS = [
+      { after: 'requirement.html', href: 'requirement-detail.html', label: '需求详情' }
+    ];
+    function doInject() {
+      var nav = document.getElementById('mcn-nav');
+      if (!nav) return;
+      var page = location.pathname.split('/').pop() || 'index.html';
+      EXTRA_LINKS.forEach(function(item) {
+        if (nav.querySelector('a[href="' + item.href + '"]')) return; // 已存在
+        var afterEl = nav.querySelector('a[href="' + item.after + '"]');
+        var a = document.createElement('a');
+        a.href = item.href;
+        a.textContent = item.label;
+        var isActive = page === item.href;
+        a.style.cssText = 'color:' + (isActive ? '#6366f1' : '#94a3b8') + ';text-decoration:none;' + (isActive ? 'font-weight:600;' : '');
+        a.addEventListener('mouseover', function() { this.style.color = '#e2e8f0'; });
+        a.addEventListener('mouseout', function() {
+          this.style.color = (page === this.getAttribute('href')) ? '#6366f1' : '#94a3b8';
+        });
+        if (afterEl && afterEl.nextSibling) {
+          nav.insertBefore(a, afterEl.nextSibling);
+        } else {
+          nav.appendChild(a);
+        }
+      });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', doInject);
+    } else {
+      doInject();
+    }
+  }
+
   function requireLogin() {
     const user = getCurrentUser();
     if (!user) {
@@ -140,9 +176,13 @@
       return;
     }
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', ensureUserBar);
+      document.addEventListener('DOMContentLoaded', function() {
+        ensureUserBar();
+        patchNav();
+      });
     } else {
       ensureUserBar();
+      patchNav();
     }
   }
 
@@ -158,9 +198,13 @@
       return;
     }
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', ensureUserBar);
+      document.addEventListener('DOMContentLoaded', function() {
+        ensureUserBar();
+        patchNav();
+      });
     } else {
       ensureUserBar();
+      patchNav();
     }
   }
 

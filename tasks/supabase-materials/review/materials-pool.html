@@ -7,8 +7,8 @@
   <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>可用素材池</title>
-  <link rel="stylesheet" href="style.css?v=202604081528e" />
-  <link rel="stylesheet" href="shared.css?v=202604081528e" />
+  <link rel="stylesheet" href="style.css?v=202604081542e" />
+  <link rel="stylesheet" href="shared.css?v=202604081542e" />
   <style>
     * { box-sizing: border-box; }
     body { background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; margin: 0; }
@@ -220,15 +220,15 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=202604081528"></script>
-  <script src="auth.js?v=202604081528"></script>
+  <script src="config.js?v=202604081542"></script>
+  <script src="auth.js?v=202604081542"></script>
   <script>Auth.requireLogin();</script>
 </head>
 <body>
 
 <!-- Nav -->
 <nav id="mcn-nav" style="background:#111827;border-bottom:1px solid #1e293b;padding:8px 16px;font-size:13px;display:none;gap:12px;flex-wrap:wrap;align-items:center;position:relative;z-index:9999;"></nav>
-<script src="nav.js?v=202604081528c"></script>
+<script src="nav.js?v=202604081542c"></script>
 
 <!-- Page Header -->
 <div class="page-header">
@@ -333,8 +333,8 @@
     <h3 id="confirm-title">确认删除</h3>
     <p id="confirm-msg"></p>
     <div class="confirm-actions">
-      <button class="btn btn-secondary" onclick="closeConfirm()">取消</button>
-      <button class="btn btn-danger" id="confirm-ok-btn" onclick="doDelete()">确认删除</button>
+      <button class="btn btn-secondary" id="confirm-cancel-btn">取消</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">确认删除</button>
     </div>
   </div>
 </div>
@@ -699,6 +699,10 @@ async function doDispatch() {
   updateBulkBar();
   await loadAll();
 }
+
+// ── Confirm modal buttons ──────────────────────────────
+document.getElementById('confirm-ok-btn').addEventListener('click', doDelete);
+document.getElementById('confirm-cancel-btn').addEventListener('click', closeConfirm);
 
 // ── Filter/Sort listeners ──────────────────────────────
 document.getElementById('filter-used').addEventListener('change', loadAll);
