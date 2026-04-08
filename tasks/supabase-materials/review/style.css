@@ -128,6 +128,19 @@ button {
   background: var(--card);
 }
 
+.meta-keyword {
+  font-size: 13px;
+  font-weight: 600;
+  color: #34d399;
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+  min-height: 0;
+}
+
+.meta-keyword:empty {
+  display: none;
+}
+
 .meta-tags {
   display: flex;
   flex-wrap: wrap;

@@ -25,6 +25,7 @@ const badgeReject = document.getElementById("badge-reject");
 const metaTags = document.getElementById("meta-tags");
 const metaMood = document.getElementById("meta-mood");
 const metaRes = document.getElementById("meta-res");
+const metaKeyword = document.getElementById("meta-keyword");
 const progressEl = document.getElementById("progress");
 const approveBtn = document.getElementById("btn-approve");
 const rejectBtn = document.getElementById("btn-reject");
@@ -111,6 +112,7 @@ function renderCard() {
   if (!materials.length || currentIndex >= materials.length) {
     cardImage.src = "";
     metaTags.innerHTML = "";
+    metaKeyword.textContent = "";
     metaMood.textContent = "--";
     metaRes.textContent = "--";
     card.style.opacity = 1;
@@ -135,6 +137,7 @@ function renderCard() {
   // 渲染标签
   const tags = item.tags || [];
   metaTags.innerHTML = tags.map(t => `<span class="tag">${t}</span>`).join("");
+  metaKeyword.textContent = item.source_keyword ? `🔍 ${item.source_keyword}` : "";
   metaMood.textContent = item.mood ? `🌈 ${item.mood}` : "";
   metaRes.textContent = item.resolution ?? "";
   updateProgress();
@@ -234,7 +237,7 @@ async function fetchPending() {
   setStatus("正在加载待审核...");
   let query = client
     .from("materials")
-    .select("id,image_url,tags,mood,resolution,storage_path,batch_id,created_at,category,context_type,context_id,context_name")
+    .select("id,image_url,tags,mood,resolution,storage_path,batch_id,created_at,category,context_type,context_id,context_name,source_keyword")
     .eq("status", "pending")
     .eq("batch_id", currentBatchId)
     .order("score", { ascending: false })
