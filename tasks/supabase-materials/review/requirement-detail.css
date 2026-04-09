@@ -318,6 +318,8 @@
   font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .sub-card-right {
@@ -608,7 +610,7 @@ a.pipeline-step-link .pipeline-step:hover {
   transform: translateX(4px);
 }
 
-.req-list-left { flex: 1; min-width: 0; }
+.req-list-left { flex: 1; min-width: 0; overflow: hidden; }
 
 .req-list-scene {
   font-size: 0.75rem;
@@ -622,9 +624,9 @@ a.pipeline-step-link .pipeline-step:hover {
   font-weight: 600;
   color: var(--text);
   margin-bottom: var(--space-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.5;
 }
 
 .req-list-time {

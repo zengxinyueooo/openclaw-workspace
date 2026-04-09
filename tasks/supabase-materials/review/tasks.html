@@ -237,14 +237,21 @@ body { background:#0d1117; color:#c9d1d9; font-family:-apple-system,BlinkMacSyst
 <div class="filter-toast" id="filterToast"></div>
 <div class="header">
   <h1>🦊 MCN 动物团 <span>任务看板</span></h1>
-  <div class="filters">
-    <button class="filter-btn active" data-agent="all">全部</button>
-    <button class="filter-btn" data-agent="main">🦊 爪爪</button>
-    <button class="filter-btn" data-agent="eagle">🦅 鹰眼</button>
-    <button class="filter-btn" data-agent="squirrel">🐿️ 松鼠</button>
-    <button class="filter-btn" data-agent="bee">🐝 蜜蜂</button>
-    <button class="filter-btn" data-agent="ant">🐜 蚂蚁</button>
-    <button class="filter-btn" data-agent="owl">🦉 猫头鹰</button>
+  <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+    <div class="filters" id="dateFilterBar">
+      <button class="filter-btn date-btn active" data-days="3">最近3天</button>
+      <button class="filter-btn date-btn" data-days="7">最近7天</button>
+      <button class="filter-btn date-btn" data-days="0">全部</button>
+    </div>
+    <div class="filters">
+      <button class="filter-btn active" data-agent="all">全部</button>
+      <button class="filter-btn" data-agent="main">🦊 爪爪</button>
+      <button class="filter-btn" data-agent="eagle">🦅 鹰眼</button>
+      <button class="filter-btn" data-agent="squirrel">🐿️ 松鼠</button>
+      <button class="filter-btn" data-agent="bee">🐝 蜜蜂</button>
+      <button class="filter-btn" data-agent="ant">🐜 蚂蚁</button>
+      <button class="filter-btn" data-agent="owl">🦉 猫头鹰</button>
+    </div>
   </div>
 </div>
 <div class="org-section" id="orgSection">
@@ -360,6 +367,7 @@ function agentShortName(id) {
 }
 
 let currentFilter = 'all';
+let currentDays = 3;
 let allTasks = [];
 const collapsedByStatus = { spawned:false, running:false, returned:false, failed:false, timeout:false };
 
@@ -395,10 +403,19 @@ function setFilter(agent) {
   render();
 }
 
-document.querySelectorAll('.filter-btn').forEach(btn => {
+document.querySelectorAll('.filter-btn:not(.date-btn)').forEach(btn => {
   btn.addEventListener('click', () => {
     setFilter(btn.dataset.agent);
   });
+});
+
+document.getElementById('dateFilterBar').addEventListener('click', e => {
+  const btn = e.target.closest('.date-btn');
+  if (!btn) return;
+  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentDays = parseInt(btn.dataset.days, 10);
+  render();
 });
 
 document.querySelectorAll('.role-card').forEach(btn => {
@@ -606,9 +623,16 @@ function renderCard(t) {
   </div>`;
 }
 function render() {
-  const filtered = currentFilter === 'all'
+  let filtered = currentFilter === 'all'
     ? allTasks
     : allTasks.filter(t => agentShortName(t.child_agent_id) === currentFilter);
+  // 日期范围过滤
+  if (currentDays > 0) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - (currentDays - 1));
+    cutoff.setHours(0, 0, 0, 0);
+    filtered = filtered.filter(t => new Date(t.created_at) >= cutoff);
+  }
 
   // Stats
   const counts = { spawned:0, running:0, returned:0, failed:0, timeout:0 };
@@ -630,7 +654,7 @@ function render() {
   board.innerHTML = COLUMNS.map(col => {
     const tasks = filtered
       .filter(t => t.status === col.status)
-      .sort((a, b) => a.priority - b.priority || new Date(a.created_at) - new Date(b.created_at));
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     const cards = tasks.length
       ? tasks.map(renderCard).join('')
       : '<div class="empty">暂无任务</div>';
@@ -668,14 +692,6 @@ async function loadTasks() {
   }
 }
 
-loadTasks();
-setFilter(currentFilter);
-setInterval(() => {
-  if (document.getElementById('autoRefresh').checked) loadTasks();
-}, 30000);
-</script>
-</body>
-</html>
 loadTasks();
 setFilter(currentFilter);
 setInterval(() => {

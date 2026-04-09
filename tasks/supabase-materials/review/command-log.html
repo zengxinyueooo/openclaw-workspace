@@ -34,6 +34,7 @@
 .chip.active[data-agent="bee"] { background: rgba(251,146,60,.15); border-color: #fb923c; color: #fb923c; }
 .chip.active[data-agent="ant"] { background: rgba(248,113,113,.15); border-color: #f87171; color: #f87171; }
 .chip.active[data-agent="main"] { background: rgba(168,85,247,.15); border-color: #a855f7; color: #a855f7; }
+.chip.active[data-agent="owl"] { background: rgba(168,85,247,.15); border-color: #a855f7; color: #a855f7; }
 
 /* Timeline */
 .timeline { position: relative; padding-left: 32px; }
@@ -106,6 +107,7 @@
 .agent-tag.bee { background: rgba(251,146,60,.15); color: #fb923c; }
 .agent-tag.ant { background: rgba(248,113,113,.15); color: #f87171; }
 .agent-tag.main { background: rgba(168,85,247,.15); color: #a855f7; }
+.agent-tag.owl { background: rgba(168,85,247,.15); color: #a855f7; }
 .log-desc {
   color: var(--text-secondary); font-size: 0.8125rem;
   line-height: 1.5; margin-top: var(--space-2);
@@ -211,7 +213,13 @@
     <input type="text" id="searchInput" placeholder="搜索指令内容...">
   </div>
 
-  <!-- Filters -->
+  <!-- Date range + Filters -->
+  <div class="log-filters" id="dateBar" style="margin-bottom:var(--space-3)">
+    <button class="chip active" data-days="1">今天</button>
+    <button class="chip" data-days="3">最近3天</button>
+    <button class="chip" data-days="7">最近7天</button>
+    <button class="chip" data-days="0">全部</button>
+  </div>
   <div class="log-filters" id="filterBar">
     <button class="chip active" data-filter="all">全部</button>
     <button class="chip" data-agent="eagle" data-filter="eagle">🦅 鹰眼</button>
@@ -249,12 +257,14 @@ const AGENT_MAP = {
   'mcn-squirrel': { emoji: '🐿️', name: '松鼠', color: '#fbbf24', cls: 'squirrel' },
   'mcn-bee': { emoji: '🐝', name: '蜜蜂', color: '#fb923c', cls: 'bee' },
   'mcn-ant': { emoji: '🐜', name: '蚂蚁', color: '#f87171', cls: 'ant' },
+  'mcn-owl': { emoji: '🦉', name: '猫头鹰', color: '#a855f7', cls: 'owl' },
   // 兼容旧短名
   main: { emoji: '🦊', name: '爪爪', color: '#a855f7', cls: 'main' },
   eagle: { emoji: '🦅', name: '鹰眼', color: '#60a5fa', cls: 'eagle' },
   squirrel: { emoji: '🐿️', name: '松鼠', color: '#fbbf24', cls: 'squirrel' },
   bee: { emoji: '🐝', name: '蜜蜂', color: '#fb923c', cls: 'bee' },
-  ant: { emoji: '🐜', name: '蚂蚁', color: '#f87171', cls: 'ant' }
+  ant: { emoji: '🐜', name: '蚂蚁', color: '#f87171', cls: 'ant' },
+  owl: { emoji: '🦉', name: '猫头鹰', color: '#a855f7', cls: 'owl' }
 };
 const STATUS_MAP = {
   returned: { label: '完成', cls: 'done' },
@@ -271,7 +281,7 @@ function agentShortName(id) {
   return id;
 }
 
-let sb, allTasks = [], currentFilter = 'all', searchQuery = '', page = 0;
+let sb, allTasks = [], currentFilter = 'all', searchQuery = '', page = 0, currentDays = 1;
 const PAGE_SIZE = 30;
 
 async function init() {
@@ -364,6 +374,13 @@ function updateStats() {
 
 function getFiltered() {
   let list = allTasks;
+  // 日期范围过滤
+  if (currentDays > 0) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - (currentDays - 1));
+    cutoff.setHours(0, 0, 0, 0);
+    list = list.filter(t => new Date(t._sortTime) >= cutoff);
+  }
   if (currentFilter !== 'all') {
     if (['done','running','failed'].includes(currentFilter)) {
       list = list.filter(t => {
@@ -459,6 +476,18 @@ function renderRow(t) {
     </div>`;
 }
 
+function dateGroupLabel(iso) {
+  if (!iso) return '未知日期';
+  const d = new Date(iso);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (+day === +today) return '今天';
+  if (+day === +yesterday) return '昨天';
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
 function renderTimeline() {
   const filtered = getFiltered();
   const shown = filtered.slice(0, (page + 1) * PAGE_SIZE);
@@ -468,7 +497,26 @@ function renderTimeline() {
     document.getElementById('loadMore').style.display = 'none';
     return;
   }
-  tl.innerHTML = shown.map(t => renderRow(t)).join('');
+  // 按日期分组渲染
+  let lastLabel = null;
+  const parts = [];
+  for (const t of shown) {
+    const label = dateGroupLabel(t._sortTime);
+    if (label !== lastLabel) {
+      parts.push(`<div style="
+        font-size:0.75rem;font-weight:700;color:var(--text-muted);
+        letter-spacing:.06em;text-transform:uppercase;
+        padding:var(--space-2) 0 var(--space-3);
+        margin-top:${lastLabel ? 'var(--space-5)' : '0'};
+        display:flex;align-items:center;gap:8px;
+      "><span style="flex:1;height:1px;background:var(--border);display:block;opacity:.5"></span>
+      <span>${label}</span>
+      <span style="flex:1;height:1px;background:var(--border);display:block;opacity:.5"></span></div>`);
+      lastLabel = label;
+    }
+    parts.push(renderRow(t));
+  }
+  tl.innerHTML = parts.join('');
   const lm = document.getElementById('loadMore');
   lm.style.display = shown.length < filtered.length ? 'block' : 'none';
 }
@@ -485,6 +533,15 @@ function setupFilters() {
     document.querySelectorAll('#filterBar .chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     currentFilter = btn.dataset.filter;
+    page = 0;
+    renderTimeline();
+  });
+  document.getElementById('dateBar').addEventListener('click', e => {
+    const btn = e.target.closest('.chip');
+    if (!btn || btn.dataset.days === undefined) return;
+    document.querySelectorAll('#dateBar .chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    currentDays = parseInt(btn.dataset.days, 10);
     page = 0;
     renderTimeline();
   });
